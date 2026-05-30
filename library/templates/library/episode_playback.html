@@ -404,7 +404,14 @@ function buildSettingsMenu(hlsInstance) {
         if (hlsInstance && hlsInstance.audioTracks && hlsInstance.audioTracks.length > 0) {
             const track = hlsInstance.audioTracks[hlsInstance.audioTrack !== -1 ? hlsInstance.audioTrack : 0];
             if (track) activeAudio = track.name || track.language || `Track ${track.id}`;
+        } else if (video.audioTracks && video.audioTracks.length > 0) {
+            for(let i=0; i<video.audioTracks.length; i++) {
+                if(video.audioTracks[i].enabled) {
+                    activeAudio = video.audioTracks[i].label || video.audioTracks[i].language || `Track ${i+1}`;
+                }
+            }
         }
+        activeAudio = activeAudio.replace(/^\d+_+/g, ''); // Clean up names like 0_Spa -> Spa
         
         let activeSub = "Off";
         const textTracks = video.textTracks;
@@ -415,6 +422,7 @@ function buildSettingsMenu(hlsInstance) {
                 }
             }
         }
+        activeSub = activeSub.replace(/^\d+_+/g, ''); // Clean up 0_Spa
         
         let activeQual = "Auto";
         if (hlsInstance && hlsInstance.currentLevel !== -1 && hlsInstance.levels[hlsInstance.currentLevel]) {
@@ -436,29 +444,50 @@ function buildSettingsMenu(hlsInstance) {
         };
         settingsMenu.appendChild(header);
         
-        if (settingsView === 'quality' && hlsInstance && hlsInstance.levels) {
-            settingsMenu.appendChild(createOptionItem('Auto', hlsInstance.nextLevel === -1, () => {
-                hlsInstance.nextLevel = -1;
-                settingsView = 'main'; buildSettingsMenu(hlsInstance);
-            }));
-            const sortedLevels = hlsInstance.levels.map((l, i) => ({...l, index: i})).sort((a,b) => b.height - a.height);
-            sortedLevels.forEach(level => {
-                settingsMenu.appendChild(createOptionItem(level.height + 'p', hlsInstance.nextLevel === level.index, () => {
-                    hlsInstance.nextLevel = level.index;
+        if (settingsView === 'quality') {
+            if (hlsInstance && hlsInstance.levels) {
+                settingsMenu.appendChild(createOptionItem('Auto', hlsInstance.nextLevel === -1, () => {
+                    hlsInstance.nextLevel = -1;
                     settingsView = 'main'; buildSettingsMenu(hlsInstance);
                 }));
-            });
+                const sortedLevels = hlsInstance.levels.map((l, i) => ({...l, index: i})).sort((a,b) => b.height - a.height);
+                sortedLevels.forEach(level => {
+                    settingsMenu.appendChild(createOptionItem(level.height + 'p', hlsInstance.nextLevel === level.index, () => {
+                        hlsInstance.nextLevel = level.index;
+                        settingsView = 'main'; buildSettingsMenu(hlsInstance);
+                    }));
+                });
+            } else {
+                settingsMenu.appendChild(createOptionItem('Auto', true, () => {}));
+            }
         }
         
-        else if (settingsView === 'audio' && hlsInstance && hlsInstance.audioTracks) {
-            hlsInstance.audioTracks.forEach(track => {
-                const isSelected = hlsInstance.audioTrack === track.id;
-                const name = track.name || track.language || `Track ${track.id}`;
-                settingsMenu.appendChild(createOptionItem(name, isSelected, () => {
-                    hlsInstance.audioTrack = track.id;
-                    settingsView = 'main'; buildSettingsMenu(hlsInstance);
-                }));
-            });
+        else if (settingsView === 'audio') {
+            if (hlsInstance && hlsInstance.audioTracks) {
+                hlsInstance.audioTracks.forEach(track => {
+                    const isSelected = hlsInstance.audioTrack === track.id;
+                    let name = track.name || track.language || `Track ${track.id}`;
+                    name = name.replace(/^\d+_+/g, '');
+                    settingsMenu.appendChild(createOptionItem(name, isSelected, () => {
+                        hlsInstance.audioTrack = track.id;
+                        settingsView = 'main'; buildSettingsMenu(hlsInstance);
+                    }));
+                });
+            } else if (video.audioTracks && video.audioTracks.length > 0) {
+                for(let i=0; i<video.audioTracks.length; i++) {
+                    const track = video.audioTracks[i];
+                    const isSelected = track.enabled;
+                    let name = track.label || track.language || `Track ${i+1}`;
+                    name = name.replace(/^\d+_+/g, '');
+                    settingsMenu.appendChild(createOptionItem(name, isSelected, () => {
+                        for(let j=0; j<video.audioTracks.length; j++) video.audioTracks[j].enabled = false;
+                        track.enabled = true;
+                        settingsView = 'main'; buildSettingsMenu(hlsInstance);
+                    }));
+                }
+            } else {
+                settingsMenu.appendChild(createOptionItem('Default Track', true, () => {}));
+            }
         }
         
         else if (settingsView === 'subtitles') {
@@ -478,7 +507,8 @@ function buildSettingsMenu(hlsInstance) {
             if(textTracks) {
                 for(let i=0; i<textTracks.length; i++) {
                     const track = textTracks[i];
-                    const name = track.label || track.language || `Track ${i+1}`;
+                    let name = track.label || track.language || `Track ${i+1}`;
+                    name = name.replace(/^\d+_+/g, '');
                     settingsMenu.appendChild(createOptionItem(name, track.mode === 'showing', () => {
                         for(let j=0; j<video.textTracks.length; j++) video.textTracks[j].mode = 'hidden';
                         track.mode = 'showing';
