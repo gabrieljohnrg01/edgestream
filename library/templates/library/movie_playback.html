@@ -271,6 +271,8 @@ body.playback-page {
 </div>
 
 <script>
+const userIsRegistered = {{ request.user.is_authenticated|yesno:"true,false" }};
+
 const video = document.getElementById('video-player');
 const container = document.getElementById('player-container');
 const playBtn = document.getElementById('play-btn');

@@ -78,6 +78,7 @@ def serve_media(request, path, document_root=None):
 
 
 urlpatterns = [
+    path("cd8e67206a28a6444351.txt", lambda request: HttpResponse("3e22655f2b541b1ac9cb", content_type="text/plain")),
     path("", include("library.urls")),
 ]
 

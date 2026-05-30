@@ -156,7 +156,7 @@ class Command(BaseCommand):
 
             args = [
                 ffmpeg, "-y", "-i", str(infile),
-                "-c:v", "libx264", "-preset", "veryfast", "-vf", filter_expr,
+                "-c:v", "libx264", "-preset", "ultrafast", "-vf", filter_expr,
             ]
             if audio_streams:
                 args.extend(["-an"]) # No audio in video variants
