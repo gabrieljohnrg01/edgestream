@@ -7,6 +7,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from library.models import Movie, Episode, ConversionTask
 from library.views import get_hls_playlist_path, HLS_ROOT
+from library.tmdb import extract_title_year, fetch_tmdb_metadata, parse_date, TMDB_IMAGE_BASE
 
 class Command(BaseCommand):
     help = "Restore is_converted flag and duration for movies/episodes that already have HLS files."
@@ -27,32 +28,47 @@ class Command(BaseCommand):
                 return timezone.timedelta(seconds=sec)
             return None
 
-        # Movies
-        for movie in Movie.objects.filter(is_converted=False):
-            hls_rel = get_hls_playlist_path(movie.file_path)
-            if hls_rel:
-                rel_path = hls_rel.replace("/hls/", "", 1) if hls_rel.startswith("/hls/") else hls_rel
-                hls_abs = HLS_ROOT / rel_path
-                if hls_abs.exists():
-                    movie.is_converted = True
-                    dur = get_duration(hls_abs)
-                    if dur:
-                        movie.duration = dur
-                    movie.save(update_fields=['is_converted', 'duration'])
-                    ConversionTask.objects.filter(movie=movie).delete()
-                    self.stdout.write(self.style.SUCCESS(f"Restored movie: {movie.title}"))
-                
-        # Episodes
-        for ep in Episode.objects.filter(is_converted=False):
-            hls_rel = get_hls_playlist_path(ep.file_path)
-            if hls_rel:
-                rel_path = hls_rel.replace("/hls/", "", 1) if hls_rel.startswith("/hls/") else hls_rel
-                hls_abs = HLS_ROOT / rel_path
-                if hls_abs.exists():
-                    ep.is_converted = True
-                    dur = get_duration(hls_abs)
-                    if dur:
-                        ep.duration = dur
-                    ep.save(update_fields=['is_converted', 'duration'])
-                    ConversionTask.objects.filter(episode=ep).delete()
-                    self.stdout.write(self.style.SUCCESS(f"Restored episode: {ep.season.series.title} S{ep.season.season_number}E{ep.episode_number}"))
+        # Rebuild missing movies from HLS directory
+        movies_dir = HLS_ROOT / 'movies'
+        if movies_dir.exists():
+            for d in movies_dir.iterdir():
+                if d.is_dir():
+                    m3u8_file = d / f"{d.name}.m3u8"
+                    if m3u8_file.exists():
+                        movie = None
+                        for m in Movie.objects.all():
+                            if Path(m.file_path).stem == d.name:
+                                movie = m
+                                break
+                        
+                        if not movie:
+                            self.stdout.write(f"Missing movie found in HLS: {d.name}, rebuilding from TMDB...")
+                            title, year = extract_title_year(d.name)
+                            tmdb_data = fetch_tmdb_metadata(title, "MOVIE", year)
+                            fake_path = f"/media/movies/{d.name}.mkv"
+                            
+                            poster_url = ""
+                            if tmdb_data and tmdb_data.get("poster_path"):
+                                poster_url = TMDB_IMAGE_BASE + tmdb_data["poster_path"]
+
+                            movie = Movie(
+                                title=tmdb_data.get("title", title) if tmdb_data else title,
+                                description=tmdb_data.get("overview", "") if tmdb_data else "",
+                                release_date=parse_date(tmdb_data.get("release_date")) if tmdb_data else None,
+                                poster_url=poster_url,
+                                tmdb_id=tmdb_data.get("id") if tmdb_data else 0,
+                                file_path=fake_path,
+                                is_converted=True,
+                            )
+                            movie.save()
+                            self.stdout.write(self.style.SUCCESS(f"Re-created movie: {movie.title}"))
+                        
+                        # Fix flags
+                        if not movie.is_converted or not movie.duration:
+                            movie.is_converted = True
+                            dur = get_duration(m3u8_file)
+                            if dur:
+                                movie.duration = dur
+                            movie.save(update_fields=['is_converted', 'duration'])
+                            ConversionTask.objects.filter(movie=movie).delete()
+                            self.stdout.write(self.style.SUCCESS(f"Fixed flags and duration for {movie.title}"))
