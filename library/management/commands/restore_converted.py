@@ -30,11 +30,15 @@ class Command(BaseCommand):
 
         # Rebuild missing movies from HLS directory
         movies_dir = HLS_ROOT / 'movies'
+        self.stdout.write(f"Scanning HLS directory: {movies_dir}")
         if movies_dir.exists():
             for d in movies_dir.iterdir():
                 if d.is_dir():
-                    m3u8_file = d / f"{d.name}.m3u8"
-                    if m3u8_file.exists():
+                    self.stdout.write(f"Found folder: {d.name}")
+                    m3u8_files = list(d.glob("*.m3u8"))
+                    if m3u8_files:
+                        m3u8_file = m3u8_files[0]
+                        self.stdout.write(f"Found playlist: {m3u8_file.name}")
                         movie = None
                         for m in Movie.objects.all():
                             if Path(m.file_path).stem == d.name:
