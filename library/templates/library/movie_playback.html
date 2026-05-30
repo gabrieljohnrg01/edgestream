@@ -284,24 +284,34 @@ body.playback-page {
     }
 }
 
-/* Loading Spinner */
+/* Loading Spinner - Custom Equalizer Wave */
 .loading-spinner {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 60px;
-    height: 60px;
-    border: 5px solid rgba(255, 255, 255, 0.2);
-    border-radius: 50%;
-    border-top-color: #e50914;
-    animation: spin 1s ease-in-out infinite;
+    display: none; /* Changed to flex via JS */
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
     z-index: 50;
-    display: none;
     pointer-events: none;
 }
-@keyframes spin {
-    to { transform: translate(-50%, -50%) rotate(360deg); }
+.loading-spinner .bar {
+    width: 6px;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 3px;
+    animation: eq 1s ease-in-out infinite;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+.loading-spinner .bar:nth-child(2) { animation-delay: 0.15s; }
+.loading-spinner .bar:nth-child(3) { animation-delay: 0.3s; }
+.loading-spinner .bar:nth-child(4) { animation-delay: 0.45s; }
+
+@keyframes eq {
+    0%, 100% { height: 12px; opacity: 0.5; }
+    50% { height: 40px; opacity: 1; }
 }
 
 /* Ensure native subtitles render above custom controls */
@@ -322,7 +332,12 @@ video::cue {
             <h2 style="color: white; margin-left: 20px; font-weight: 400; display: inline-block;">{{ movie.title }} ({{ movie.release_date.year }})</h2>
         </div>
         
-        <div class="loading-spinner" id="loading-spinner"></div>
+        <div class="loading-spinner" id="loading-spinner">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+        </div>
         <video id="video-player" playsinline poster="{{ movie.poster_url }}" onclick="togglePlay()">
             {% if fallback_file and not hls_playlist %}
             <source src="{{ fallback_file }}" type="{{ fallback_type }}">
@@ -432,7 +447,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-video.addEventListener('waiting', () => { loadingSpinner.style.display = 'block'; });
+video.addEventListener('waiting', () => { loadingSpinner.style.display = 'flex'; });
 video.addEventListener('playing', () => { loadingSpinner.style.display = 'none'; });
 video.addEventListener('canplay', () => { loadingSpinner.style.display = 'none'; });
 
