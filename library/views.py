@@ -201,7 +201,7 @@ def search(request):
 
 
 def movies(request):
-    featured_movie = Movie.objects.filter(is_converted=True).order_by("-watch_count").first()
+    featured_items = Movie.objects.filter(is_converted=True).order_by("-watch_count")[:4]
     
     genre_rows = []
     
@@ -216,14 +216,14 @@ def movies(request):
             genre_rows.append({"name": genre.name, "items": genre_movies})
             
     context = {
-        "featured": featured_movie,
+        "featured_items": featured_items,
         "genre_rows": genre_rows,
     }
     return render(request, "library/movies.html", context)
 
 
 def series(request):
-    featured_series = get_converted_series_queryset().order_by("-watch_count").first()
+    featured_items = get_converted_series_queryset().order_by("-watch_count")[:4]
     
     genre_rows = []
     
@@ -238,7 +238,7 @@ def series(request):
             genre_rows.append({"name": genre.name, "items": genre_series})
             
     context = {
-        "featured": featured_series,
+        "featured_items": featured_items,
         "genre_rows": genre_rows,
     }
     return render(request, "library/series.html", context)
