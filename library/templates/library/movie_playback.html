@@ -428,7 +428,11 @@ function buildSettingsMenu(hlsInstance) {
         const header = document.createElement('div');
         header.className = 'settings-header';
         header.innerHTML = `<i class="bi bi-chevron-left"></i> <span>${settingsView.charAt(0).toUpperCase() + settingsView.slice(1)}</span>`;
-        header.onclick = () => { settingsView = 'main'; buildSettingsMenu(hlsInstance); };
+        header.onclick = (e) => { 
+            e.stopPropagation();
+            settingsView = 'main'; 
+            buildSettingsMenu(hlsInstance); 
+        };
         settingsMenu.appendChild(header);
         
         if (settingsView === 'quality' && hlsInstance && hlsInstance.levels) {
@@ -492,7 +496,10 @@ function createMainItem(title, value, iconClass, onClick) {
         <div class="settings-item-left"><i class="bi ${iconClass}"></i> ${title}</div>
         <div class="settings-item-right">${value} <i class="bi bi-chevron-right"></i></div>
     `;
-    item.onclick = onClick;
+    item.onclick = (e) => {
+        e.stopPropagation();
+        onClick();
+    };
     return item;
 }
 
@@ -501,7 +508,10 @@ function createOptionItem(title, isActive, onClick) {
     item.className = 'settings-option';
     if(isActive) item.classList.add('active');
     item.innerHTML = `<i class="bi bi-check check-icon"></i> ${title}`;
-    item.onclick = onClick;
+    item.onclick = (e) => {
+        e.stopPropagation();
+        onClick();
+    };
     return item;
 }
 

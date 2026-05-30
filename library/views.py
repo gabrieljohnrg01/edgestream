@@ -484,6 +484,16 @@ def api_update_progress(request):
     return JsonResponse({"status": "error"})
 
 @login_required
+def api_clear_queue(request):
+    if request.method == "POST":
+        try:
+            ConversionTask.objects.filter(status__in=["COMPLETED", "FAILED"]).delete()
+            return JsonResponse({"status": "success"})
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)})
+    return JsonResponse({"status": "error"}, status=400)
+
+@login_required
 def api_playback_progress(request):
     if request.method != "POST":
         return JsonResponse({"error": "Method not allowed"}, status=405)

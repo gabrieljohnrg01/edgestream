@@ -21,6 +21,7 @@ urlpatterns = [
     path("watchlist/", views.watchlist_view, name="watchlist"),
     path("api/watchlist/toggle/", views.api_toggle_watchlist, name="api_toggle_watchlist"),
     path("api/progress/update/", views.api_update_progress, name="api_update_progress"),
+    path("api/queue/clear/", views.api_clear_queue, name="api_clear_queue"),
     path("settings/", views.settings_view, name="settings"),
 ]
 
