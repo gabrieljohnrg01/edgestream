@@ -82,11 +82,8 @@ class Command(BaseCommand):
             self._convert_to_hls(ffmpeg, media_path, task)
             self._delete_source_file(media_path)
             self._mark_converted(task)
-            task.status = ConversionTask.STATUS_COMPLETED
-            task.progress = 100
-            task.updated_at = timezone.now()
-            task.save(update_fields=["status", "progress", "updated_at"])
-            self.stdout.write(self.style.SUCCESS(f"Converted: {task.file_path}"))
+            task.delete()
+            self.stdout.write(self.style.SUCCESS(f"Converted and removed from queue: {task.file_path}"))
         except Exception as exc:
             task.status = ConversionTask.STATUS_FAILED
             task.error_message = str(exc)
