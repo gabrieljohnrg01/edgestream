@@ -314,6 +314,21 @@ body {
 }
 
 @media (max-width: 768px) {
+    .top-bar {
+        padding: 15px 20px;
+    }
+    .top-bar-inner {
+        justify-content: space-between;
+        gap: 15px;
+    }
+    .user-auth {
+        position: relative;
+    }
+    .search-form {
+        max-width: none;
+        flex: 1;
+    }
+    
     h1 {
         font-size: 1.75rem;
     }
@@ -344,7 +359,7 @@ body {
 }
 
 @media (max-width: 520px) {
-    .site-header {
+    .top-bar {
         padding: 14px 14px;
     }
 

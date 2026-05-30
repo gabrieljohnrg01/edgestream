@@ -158,7 +158,10 @@ def generate_master_playlist_with_audio(master_playlist_path, variants, audio_st
         # E.g. #EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",LANGUAGE="eng",NAME="English",DEFAULT=YES,URI="audio_eng/playlist.m3u8"
         for i, aud in enumerate(audio_streams):
             lang = aud.get("lang", f"trk{i}")
-            name = lang.upper()
+            if lang.lower().startswith("trk") or lang.lower() == "und":
+                name = f"Track {i + 1}"
+            else:
+                name = f"Track {i + 1} ({lang.upper()})"
             is_default = "YES" if i == 0 else "NO"
             uri = f"audio_{i}_{lang}/playlist.m3u8"
             f.write(f'#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",LANGUAGE="{lang}",NAME="{name}",DEFAULT={is_default},AUTOSELECT={is_default},URI="{uri}"\n')

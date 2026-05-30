@@ -183,35 +183,113 @@ body.playback-page {
     position: absolute;
     bottom: 60px;
     right: -20px;
-    background: rgba(20, 20, 20, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 4px;
-    padding: 10px 0;
-    min-width: 140px;
+    background: rgba(28, 28, 28, 0.95);
+    border-radius: 12px;
+    min-width: 280px;
     display: none;
     flex-direction: column;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    overflow: hidden;
+    color: #eee;
+    font-size: 14px;
+    padding: 8px 0;
+    backdrop-filter: blur(10px);
 }
 .settings-menu.active {
     display: flex;
 }
-.settings-menu button {
-    background: transparent;
-    border: none;
-    color: #e5e5e5;
-    padding: 10px 24px;
-    text-align: center;
+.settings-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
     cursor: pointer;
-    font-size: 1rem;
-    font-weight: 500;
-    transition: background 0.2s, color 0.2s;
+    transition: background 0.2s;
+    justify-content: space-between;
 }
-.settings-menu button:hover {
+.settings-item:hover {
     background: rgba(255, 255, 255, 0.1);
-    color: #fff;
 }
-.settings-menu button.active-quality {
-    color: #e50914;
+.settings-item-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+.settings-item-left i {
+    font-size: 20px;
+    width: 24px;
+    text-align: center;
+}
+.settings-item-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #aaa;
+    font-size: 0.9rem;
+}
+.settings-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    margin-bottom: 4px;
+    font-weight: 500;
+}
+.settings-header:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+.settings-option {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    cursor: pointer;
+    gap: 15px;
+}
+.settings-option:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+.settings-option .check-icon {
+    width: 24px;
+    visibility: hidden;
+    font-size: 20px;
+}
+.settings-option.active .check-icon {
+    visibility: visible;
+}
+
+@media (max-width: 768px) {
+    .player-controls {
+        padding: 0 15px 15px !important;
+    }
+    .control-buttons-left, .control-buttons-right {
+        gap: 15px !important;
+    }
+    .player-btn i {
+        font-size: 24px !important;
+    }
+    .time-display {
+        font-size: 0.9rem !important;
+    }
+    .settings-menu {
+        bottom: 50px !important;
+        right: -10px !important;
+        min-width: 240px !important;
+    }
+    .playback-overlay {
+        padding: 20px 15px !important;
+    }
+    .back-link {
+        font-size: 1rem !important;
+    }
+}
+
+/* Ensure native subtitles render above custom controls */
+video::-webkit-media-text-track-display {
+    transform: translateY(-80px) !important;
+}
+video::cue {
+    transform: translateY(-80px) !important;
 }
 </style>
 {% endblock %}
@@ -223,7 +301,7 @@ body.playback-page {
             <a href="{% url 'movie_detail' movie.pk %}" class="back-link"><i class="bi bi-arrow-left"></i> Back to Movie</a>
         </div>
         
-        <video id="video-player" crossorigin playsinline poster="{{ movie.poster_url }}" onclick="togglePlay()">
+        <video id="video-player" playsinline poster="{{ movie.poster_url }}" onclick="togglePlay()">
             {% if fallback_file and not hls_playlist %}
             <source src="{{ fallback_file }}" type="{{ fallback_type }}">
             {% endif %}
@@ -315,112 +393,116 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+let settingsView = 'main';
+
 function buildSettingsMenu(hlsInstance) {
     settingsMenu.innerHTML = '';
-
-    // Quality Section
-    if(hlsInstance.levels && hlsInstance.levels.length > 0) {
-        const qTitle = document.createElement('div');
-        qTitle.innerText = "Quality";
-        qTitle.style.cssText = "color:#888; font-size:0.8rem; padding: 4px 12px; text-transform:uppercase;";
-        settingsMenu.appendChild(qTitle);
-
-        const autoBtn = document.createElement('button');
-        autoBtn.innerText = 'Auto';
-        autoBtn.classList.add('active-quality', 'quality-btn');
-        autoBtn.onclick = () => setQuality(-1, autoBtn);
-        settingsMenu.appendChild(autoBtn);
-
-        const sortedLevels = hlsInstance.levels.map((l, i) => ({...l, index: i})).sort((a,b) => b.height - a.height);
-        sortedLevels.forEach(level => {
-            const btn = document.createElement('button');
-            btn.innerText = level.height + 'p';
-            btn.classList.add('quality-btn');
-            btn.onclick = () => setQuality(level.index, btn);
-            settingsMenu.appendChild(btn);
-        });
-    }
-
-    // Audio Section
-    const aTitle = document.createElement('div');
-    aTitle.innerText = "Audio";
-    aTitle.style.cssText = "color:#888; font-size:0.8rem; padding: 12px 12px 4px; text-transform:uppercase; border-top: 1px solid #333;";
-    settingsMenu.appendChild(aTitle);
     
-    if(hlsInstance.audioTracks && hlsInstance.audioTracks.length > 0) {
-        hlsInstance.audioTracks.forEach(track => {
-            const btn = document.createElement('button');
-            btn.innerText = track.name || track.language || `Track ${track.id}`;
-            btn.classList.add('audio-btn');
-            if(track.default) btn.classList.add('active-quality');
-            btn.onclick = () => setAudioTrack(track.id, btn);
-            settingsMenu.appendChild(btn);
-        });
-    } else {
-        const btn = document.createElement('button');
-        btn.innerText = "Default Track";
-        btn.classList.add('audio-btn', 'active-quality');
-        settingsMenu.appendChild(btn);
-    }
-
-    // Subtitles Section
-    const sTitle = document.createElement('div');
-    sTitle.innerText = "Subtitles";
-    sTitle.style.cssText = "color:#888; font-size:0.8rem; padding: 12px 12px 4px; text-transform:uppercase; border-top: 1px solid #333;";
-    settingsMenu.appendChild(sTitle);
-    
-    const offBtn = document.createElement('button');
-    offBtn.innerText = 'Off';
-    offBtn.classList.add('sub-btn');
-    offBtn.onclick = () => setSubtitle(-1, offBtn);
-    settingsMenu.appendChild(offBtn);
-    
-    const textTracks = video.textTracks;
-    let hasActiveSub = false;
-    
-    if(textTracks && textTracks.length > 0) {
-        for(let i=0; i<textTracks.length; i++) {
-            const track = textTracks[i];
-            const btn = document.createElement('button');
-            btn.innerText = track.label || track.language || `Track ${i+1}`;
-            btn.classList.add('sub-btn');
-            if(track.mode === 'showing') {
-                btn.classList.add('active-quality');
-                hasActiveSub = true;
+    if (settingsView === 'main') {
+        let activeAudio = "Default Track";
+        if (hlsInstance && hlsInstance.audioTracks && hlsInstance.audioTracks.length > 0) {
+            const track = hlsInstance.audioTracks[hlsInstance.audioTrack !== -1 ? hlsInstance.audioTrack : 0];
+            if (track) activeAudio = track.name || track.language || `Track ${track.id}`;
+        }
+        
+        let activeSub = "Off";
+        const textTracks = video.textTracks;
+        if (textTracks) {
+            for(let i=0; i<textTracks.length; i++) {
+                if(textTracks[i].mode === 'showing') {
+                    activeSub = textTracks[i].label || textTracks[i].language || `Track ${i+1}`;
+                }
             }
-            btn.onclick = () => setSubtitle(i, btn);
-            settingsMenu.appendChild(btn);
+        }
+        
+        let activeQual = "Auto";
+        if (hlsInstance && hlsInstance.currentLevel !== -1 && hlsInstance.levels[hlsInstance.currentLevel]) {
+            activeQual = hlsInstance.levels[hlsInstance.currentLevel].height + 'p';
+        }
+
+        settingsMenu.appendChild(createMainItem('Audio track', activeAudio, 'bi-music-note-beamed', () => { settingsView = 'audio'; buildSettingsMenu(hlsInstance); }));
+        settingsMenu.appendChild(createMainItem('Subtitles/CC', activeSub, 'bi-badge-cc', () => { settingsView = 'subtitles'; buildSettingsMenu(hlsInstance); }));
+        settingsMenu.appendChild(createMainItem('Quality', activeQual, 'bi-sliders', () => { settingsView = 'quality'; buildSettingsMenu(hlsInstance); }));
+        
+    } else {
+        const header = document.createElement('div');
+        header.className = 'settings-header';
+        header.innerHTML = `<i class="bi bi-chevron-left"></i> <span>${settingsView.charAt(0).toUpperCase() + settingsView.slice(1)}</span>`;
+        header.onclick = () => { settingsView = 'main'; buildSettingsMenu(hlsInstance); };
+        settingsMenu.appendChild(header);
+        
+        if (settingsView === 'quality' && hlsInstance && hlsInstance.levels) {
+            settingsMenu.appendChild(createOptionItem('Auto', hlsInstance.nextLevel === -1, () => {
+                hlsInstance.nextLevel = -1;
+                settingsView = 'main'; buildSettingsMenu(hlsInstance);
+            }));
+            const sortedLevels = hlsInstance.levels.map((l, i) => ({...l, index: i})).sort((a,b) => b.height - a.height);
+            sortedLevels.forEach(level => {
+                settingsMenu.appendChild(createOptionItem(level.height + 'p', hlsInstance.nextLevel === level.index, () => {
+                    hlsInstance.nextLevel = level.index;
+                    settingsView = 'main'; buildSettingsMenu(hlsInstance);
+                }));
+            });
+        }
+        
+        else if (settingsView === 'audio' && hlsInstance && hlsInstance.audioTracks) {
+            hlsInstance.audioTracks.forEach(track => {
+                const isSelected = hlsInstance.audioTrack === track.id;
+                const name = track.name || track.language || `Track ${track.id}`;
+                settingsMenu.appendChild(createOptionItem(name, isSelected, () => {
+                    hlsInstance.audioTrack = track.id;
+                    settingsView = 'main'; buildSettingsMenu(hlsInstance);
+                }));
+            });
+        }
+        
+        else if (settingsView === 'subtitles') {
+            let hasActiveSub = false;
+            const textTracks = video.textTracks;
+            if(textTracks) {
+                for(let i=0; i<textTracks.length; i++) {
+                    if(textTracks[i].mode === 'showing') hasActiveSub = true;
+                }
+            }
+            
+            settingsMenu.appendChild(createOptionItem('Off', !hasActiveSub, () => {
+                for(let i=0; i<video.textTracks.length; i++) video.textTracks[i].mode = 'hidden';
+                settingsView = 'main'; buildSettingsMenu(hlsInstance);
+            }));
+            
+            if(textTracks) {
+                for(let i=0; i<textTracks.length; i++) {
+                    const track = textTracks[i];
+                    const name = track.label || track.language || `Track ${i+1}`;
+                    settingsMenu.appendChild(createOptionItem(name, track.mode === 'showing', () => {
+                        for(let j=0; j<video.textTracks.length; j++) video.textTracks[j].mode = 'hidden';
+                        track.mode = 'showing';
+                        settingsView = 'main'; buildSettingsMenu(hlsInstance);
+                    }));
+                }
+            }
         }
     }
-    if(!hasActiveSub) {
-        offBtn.classList.add('active-quality');
-    }
 }
 
-function setQuality(levelIndex, clickedBtn) {
-    if(hls) hls.nextLevel = levelIndex;
-    const buttons = settingsMenu.querySelectorAll('.quality-btn');
-    buttons.forEach(b => b.classList.remove('active-quality'));
-    clickedBtn.classList.add('active-quality');
+function createMainItem(title, value, iconClass, onClick) {
+    const item = document.createElement('div');
+    item.className = 'settings-item';
+    item.innerHTML = `
+        <div class="settings-item-left"><i class="bi ${iconClass}"></i> ${title}</div>
+        <div class="settings-item-right">${value} <i class="bi bi-chevron-right"></i></div>
+    `;
+    item.onclick = onClick;
+    return item;
 }
 
-function setAudioTrack(trackId, clickedBtn) {
-    if(hls) hls.audioTrack = trackId;
-    const buttons = settingsMenu.querySelectorAll('.audio-btn');
-    buttons.forEach(b => b.classList.remove('active-quality'));
-    clickedBtn.classList.add('active-quality');
-}
-
-function setSubtitle(trackIndex, clickedBtn) {
-    for(let i=0; i<video.textTracks.length; i++) {
-        video.textTracks[i].mode = 'hidden';
-    }
-    if(trackIndex >= 0) {
-        video.textTracks[trackIndex].mode = 'showing';
-    }
-    const buttons = settingsMenu.querySelectorAll('.sub-btn');
-    buttons.forEach(b => b.classList.remove('active-quality'));
-    clickedBtn.classList.add('active-quality');
+function createOptionItem(title, isActive, onClick) {
+    const item = document.createElement('div');
+    item.className = 'settings-option';
+    if(isActive) item.classList.add('active');
+    item.innerHTML = `<i class="bi bi-check check-icon"></i> ${title}`;
+    item.onclick = onClick;
+    return item;
 }
 
 function togglePlay() {
@@ -498,26 +580,50 @@ function seek(e) {
 
 function formatTime(seconds) {
     if(isNaN(seconds)) return "0:00";
-    const m = Math.floor(seconds / 60);
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
     const s = Math.floor(seconds % 60);
+    if (h > 0) {
+        return `${h}:${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+    }
     return `${m}:${s < 10 ? '0' : ''}${s}`;
 }
 
 function toggleFullscreen() {
     if (!document.fullscreenElement) {
-        container.requestFullscreen();
+        const req = container.requestFullscreen || container.webkitRequestFullscreen || container.mozRequestFullScreen || container.msRequestFullscreen;
+        if (req) {
+            req.call(container).then(() => {
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').catch(e => console.log(e));
+                }
+            }).catch(err => console.log(err));
+        } else if (video.webkitEnterFullscreen) {
+            video.webkitEnterFullscreen(); // iOS fallback
+        }
     } else {
-        document.exitFullscreen();
+        const exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+        if (exit) {
+            exit.call(document).then(() => {
+                if (screen.orientation && screen.orientation.unlock) {
+                    screen.orientation.unlock();
+                }
+            }).catch(err => console.log(err));
+        }
     }
 }
 
 function toggleSettings(e) {
     e.stopPropagation();
+    settingsView = 'main';
+    buildSettingsMenu(hls);
     settingsMenu.classList.toggle('active');
 }
 
-document.addEventListener('click', () => {
-    settingsMenu.classList.remove('active');
+document.addEventListener('click', (e) => {
+    if (!settingsMenu.contains(e.target) && e.target.id !== 'settings-btn' && e.target.closest('#settings-btn') === null) {
+        settingsMenu.classList.remove('active');
+    }
 });
 
 video.addEventListener('play', () => {
