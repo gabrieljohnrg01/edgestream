@@ -95,7 +95,7 @@ class Command(BaseCommand):
 
         for root, _, files in os.walk(movies_dir):
             for filename in sorted(files):
-                if not filename.lower().endswith((".mp4", ".avi")):
+                if not filename.lower().endswith((".mp4", ".avi", ".mkv", ".m4v")):
                     continue
 
                 full_path = os.path.join(root, filename)
@@ -148,7 +148,7 @@ class Command(BaseCommand):
 
         for root, _, files in os.walk(series_dir):
             for filename in sorted(files):
-                if not filename.lower().endswith((".mp4", ".avi")):
+                if not filename.lower().endswith((".mp4", ".avi", ".mkv", ".m4v")):
                     continue
 
                 season_num, episode_num = extract_season_episode(filename)
