@@ -15,6 +15,15 @@ TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500"
 
 
 def clean_title(filename):
+    try:
+        from guessit import guessit
+        guess = guessit(filename)
+        title = guess.get("title")
+        if title:
+            return title
+    except ImportError:
+        pass
+        
     title = os.path.splitext(filename)[0]
     
     # Remove season/episode info (S01E01 patterns)
@@ -42,11 +51,20 @@ def clean_title(filename):
 
 
 def extract_title_year(filename):
-    cleaned = os.path.splitext(filename)[0]
-    year_match = re.search(r"\b(19|20)\d{2}\b", cleaned)
-    year = int(year_match.group(0)) if year_match else None
-    title = clean_title(filename)
-    return title, year
+    try:
+        from guessit import guessit
+        guess = guessit(filename)
+        title = guess.get("title")
+        year = guess.get("year")
+        if not title:
+            title = clean_title(filename)
+        return title, year
+    except ImportError:
+        cleaned = os.path.splitext(filename)[0]
+        year_match = re.search(r"\b(19|20)\d{2}\b", cleaned)
+        year = int(year_match.group(0)) if year_match else None
+        title = clean_title(filename)
+        return title, year
 
 
 def normalize_title_for_match(title):

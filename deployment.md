@@ -1,163 +1,154 @@
-# EdgeStream Deployment Guide (Debian / Ubuntu Linux)
+# EdgeStream Deployment Guide (Multi-Project Server)
 
-This guide walks you through deploying EdgeStream for a production environment on a Debian-based Linux server. We will use **Gunicorn** as the production WSGI server, **WhiteNoise** for serving static files, and **systemd** to run everything seamlessly in the background.
+Since you are hosting EdgeStream on a Debian server *alongside another project*, we need to ensure they don't clash. We will achieve this by giving EdgeStream its own dedicated internal port (e.g., `8001`) and using NGINX's `server_name` directive to route traffic correctly based on the subdomain requested by your Cloudflare Tunnel.
 
-## Prerequisites
-
-1. **Update and Install System Dependencies**:
-   SSH into your Debian server and run:
-   ```bash
-   sudo apt update
-   sudo apt upgrade -y
-   sudo apt install -y python3 python3-venv python3-pip ffmpeg git
-   ```
-2. **Database**: The project uses SQLite by default, which is perfectly fine for personal media servers. 
+## Architectural Overview
+1. **Cloudflare Tunnel**: You configure your tunnel so that your EdgeStream domain (e.g., `stream.yourdomain.com`) routes to `http://localhost:80`.
+2. **NGINX**: Listens on port 80. When it sees traffic specifically for `stream.yourdomain.com`, it intercepts the media files directly, and passes the web traffic to Gunicorn on port `8001`.
+3. **Gunicorn**: Runs EdgeStream entirely on port `8001` to avoid conflicting with your other project (which might be using `8000`).
 
 ---
 
-## Step 1: Prepare the Environment
+## Step 1: Set Up the Project
 
-1. **Move the Project to the Server**
-   Clone or copy your EdgeStream project folder to a standard location on your server, such as `/opt/edgestream`:
-   ```bash
-   sudo mkdir -p /opt/edgestream
-   sudo chown -R $USER:$USER /opt/edgestream
-   # (Copy your files into /opt/edgestream here)
-   cd /opt/edgestream
-   ```
-
-2. **Create a Virtual Environment**
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
-
-3. **Install Dependencies**
-   First, let's swap `waitress` for `gunicorn`, which is the industry standard for Linux deployments.
-   ```bash
-   # Remove waitress from requirements.txt if it's there
-   sed -i '/waitress/d' requirements.txt
-   
-   # Add gunicorn
-   echo "gunicorn>=21.2.0" >> requirements.txt
-   
-   # Install everything
-   pip install -r requirements.txt
-   ```
-
----
-
-## Step 2: Configure Environment Variables
-
-Do NOT run the production server with `DEBUG=True`. 
-
-1. Copy `.env.example` and rename it to `.env`:
-   ```bash
-   cp .env.example .env
-   ```
-2. Open `.env` (using `nano .env`) and set the following:
-   - **`DJANGO_SECRET_KEY`**: Generate a long, random string. Do not share this.
-   - **`DJANGO_DEBUG`**: Set to `False`.
-   - **`DJANGO_ALLOWED_HOSTS`**: Add your server's IP address or domain name (e.g., `192.168.1.50, mydomain.com`).
-
----
-
-## Step 3: Prepare Django
-
-Run the following commands to finalize the database and static files:
-
-1. **Apply Migrations**
-   ```bash
-   python manage.py migrate
-   ```
-
-2. **Collect Static Files**
-   This command gathers all CSS, JS, and image files into a single `staticfiles/` directory so WhiteNoise can compress and cache them:
-   ```bash
-   python manage.py collectstatic --noinput
-   ```
-
-3. **Create a Superuser** (If you haven't already)
-   ```bash
-   python manage.py createsuperuser
-   ```
-
----
-
-## Step 4: Run as Systemd Services (Background)
-
-To ensure EdgeStream runs automatically when the server boots and stays running in the background, we will create two `systemd` services: one for the Web Server, and one for the Background Video Converter.
-
-### 1. The Web Server Service
-Create a new service file:
+Assuming your code is in `/home/gab/edgestream`:
 ```bash
-sudo nano /etc/systemd/system/edgestream-web.service
-```
-Paste the following configuration (adjust `User=` to your actual linux username, e.g., `root` or `debian`):
-```ini
-[Unit]
-Description=EdgeStream Web Server
-After=network.target
-
-[Service]
-User=root
-Group=root
-WorkingDirectory=/opt/edgestream
-Environment="PATH=/opt/edgestream/venv/bin"
-ExecStart=/opt/edgestream/venv/bin/gunicorn mediaserver.wsgi:application --bind 0.0.0.0:8000 --workers 3
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
+cd /home/gab/edgestream
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 ```
 
-### 2. The Background Conversion Worker
-Create a second service file:
+**Configure `.env`**:
 ```bash
-sudo nano /etc/systemd/system/edgestream-worker.service
+cp .env.example .env
+nano .env
 ```
-Paste the following configuration:
-```ini
-[Unit]
-Description=EdgeStream Video Conversion Worker
-After=network.target
+- `DJANGO_SECRET_KEY`: Set to a secure random string.
+- `DJANGO_DEBUG`: Set to `False`.
+- `DJANGO_ALLOWED_HOSTS`: Set to your specific Cloudflare domain (e.g., `stream.yourdomain.com`).
 
-[Service]
-User=root
-Group=root
-WorkingDirectory=/opt/edgestream
-Environment="PATH=/opt/edgestream/venv/bin"
-# A bash loop that continuously processes the queue without terminating
-ExecStart=/bin/bash -c 'while true; do /opt/edgestream/venv/bin/python manage.py process_conversion_queue --limit 10; sleep 10; done'
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-```
-
-### 3. Enable and Start the Services
-
-Now, reload the systemd daemon so it registers your new files, and start them up!
-
+**Prepare Database and Static Files**:
 ```bash
-sudo systemctl daemon-reload
-
-sudo systemctl enable edgestream-web
-sudo systemctl start edgestream-web
-
-sudo systemctl enable edgestream-worker
-sudo systemctl start edgestream-worker
-```
-
-You can check their status at any time using:
-```bash
-sudo systemctl status edgestream-web
-sudo systemctl status edgestream-worker
+python manage.py migrate
+python manage.py collectstatic --noinput
 ```
 
 ---
 
-## Congratulations!
-Your EdgeStream production deployment is complete. It is now permanently running in the background on port `8000`. You can access it from other devices on your network using `http://YOUR_SERVER_IP:8000`. 
+## Step 2: Configure NGINX for Coexistence
 
-*(Optional: For a fully professional setup, you can install NGINX to reverse-proxy port 80 to port 8000, and secure it using Let's Encrypt SSL!)*
+Create a dedicated NGINX configuration file for EdgeStream:
+```bash
+sudo nano /etc/nginx/sites-available/edgestream
+```
+
+Paste the following, making sure to replace `stream.yourdomain.com` with your actual domain:
+```nginx
+server {
+    listen 80;
+    
+    # CRITICAL: This ensures NGINX only routes traffic here if the tunnel asks for this specific domain!
+    server_name stream.yourdomain.com; 
+
+    # 1. Serve heavy media/HLS files directly bypassing Django
+    location /media/ {
+        alias /home/gab/edgestream/media/;
+        add_header Accept-Ranges bytes;
+    }
+
+    location /hls/ {
+        alias /home/gab/edgestream/media/hls/;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        add_header Access-Control-Allow-Origin *;
+        types {
+            application/vnd.apple.mpegurl m3u8;
+            video/mp2t ts;
+        }
+    }
+
+    # 2. Proxy web traffic to EdgeStream's unique port (8001)
+    location / {
+        proxy_pass http://127.0.0.1:8001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+Enable the configuration and reload NGINX:
+```bash
+sudo ln -s /etc/nginx/sites-available/edgestream /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+---
+
+## Step 3: Run EdgeStream as Systemd Services
+
+We need to bind Gunicorn to port `8001` so it doesn't break your other project.
+
+1. **Gunicorn Web Server**:
+   ```bash
+   sudo nano /etc/systemd/system/edgestream-web.service
+   ```
+   ```ini
+   [Unit]
+   Description=EdgeStream Gunicorn Server
+   After=network.target
+
+   [Service]
+   User=root
+   Group=root
+   WorkingDirectory=/home/gab/edgestream
+   Environment="PATH=/home/gab/edgestream/venv/bin"
+   # Notice we are binding to 8001 here!
+   ExecStart=/home/gab/edgestream/venv/bin/gunicorn mediaserver.wsgi:application --bind 127.0.0.1:8001 --workers 3
+   Restart=always
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+
+2. **Background Video Converter Worker**:
+   ```bash
+   sudo nano /etc/systemd/system/edgestream-worker.service
+   ```
+   ```ini
+   [Unit]
+   Description=EdgeStream Background Worker
+   After=network.target
+
+   [Service]
+   User=root
+   WorkingDirectory=/home/gab/edgestream
+   Environment="PATH=/home/gab/edgestream/venv/bin"
+   # This loop automatically detects new files (scan_media) and then converts them!
+   ExecStart=/bin/bash -c 'while true; do /home/gab/edgestream/venv/bin/python manage.py scan_media; /home/gab/edgestream/venv/bin/python manage.py process_conversion_queue --limit 10; sleep 30; done'
+   Restart=always
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+
+3. **Start Both Services**:
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable --now edgestream-web
+   sudo systemctl enable --now edgestream-worker
+   ```
+
+---
+
+## Step 4: Configure Cloudflare Tunnel
+
+In your Cloudflare Zero Trust Dashboard:
+1. Go to your active Tunnel.
+2. Under the **Public Hostname** tab, add a new hostname (e.g., `stream.yourdomain.com`).
+3. Set the **Service** to: `http://localhost:80`
+
+**How it works**:
+When someone visits `stream.yourdomain.com`, Cloudflare securely hits NGINX on port 80. NGINX reads the `server_name` block and realizes the request is for EdgeStream. It then serves the video chunks directly or passes the web traffic to Gunicorn running safely on port 8001, leaving your other project completely untouched!

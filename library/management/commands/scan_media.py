@@ -60,6 +60,20 @@ def get_media_duration(path):
 
 
 def extract_season_episode(filename):
+    try:
+        from guessit import guessit
+        guess = guessit(filename)
+        season = guess.get("season")
+        episode = guess.get("episode")
+        
+        if isinstance(episode, list):
+            episode = episode[0]
+            
+        if season is not None and episode is not None:
+            return int(season), int(episode)
+    except ImportError:
+        pass
+
     match = re.search(r"[Ss](\d{1,2})[Ee](\d{1,2})", filename)
     if match:
         return int(match.group(1)), int(match.group(2))
