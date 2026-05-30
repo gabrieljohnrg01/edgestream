@@ -1,6 +1,11 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
+class Genre(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.name
 
 
 class Movie(models.Model):
@@ -15,6 +20,7 @@ class Movie(models.Model):
     watch_count = models.IntegerField(default=0)
     last_watch_reset = models.DateTimeField(default=timezone.now)
     is_converted = models.BooleanField(default=False)
+    genres = models.ManyToManyField(Genre, blank=True)
 
     class Meta:
         ordering = ["-date_added"]
@@ -44,6 +50,7 @@ class Series(models.Model):
     date_added = models.DateTimeField(default=timezone.now)
     watch_count = models.IntegerField(default=0)
     last_watch_reset = models.DateTimeField(default=timezone.now)
+    genres = models.ManyToManyField(Genre, blank=True)
 
     class Meta:
         ordering = ["-date_added"]

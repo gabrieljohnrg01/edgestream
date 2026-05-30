@@ -34,35 +34,28 @@
 </div>
 {% endif %}
 
-<!-- Top 10 Movies Section -->
-<div class="section" style="margin-bottom: 40px;">
-    <h2 style="font-size: 1.2rem; font-weight: 600; margin: 0 0 16px;">Top 10 Movies</h2>
-    <div class="scroll-row" style="display: flex; overflow-x: auto; gap: 16px; padding-bottom: 8px;">
-        {% for movie in top_items %}
-            <a href="{% url 'movie_detail' movie.pk %}" class="card" style="flex: 0 0 auto; width: 220px;">
-                <img src="{{ movie.poster_url }}" alt="{{ movie.title }}">
-                <h3 class="card-title">{{ movie.title }}</h3>
-            </a>
-        {% empty %}
-            <p style="color: var(--text-muted-gray);">No movies available.</p>
-        {% endfor %}
-    </div>
-</div>
 
-<!-- All Movies Section -->
+
+<!-- Categorized Movies Rows -->
+{% for row in genre_rows %}
 <div class="section" style="margin-bottom: 40px;">
-    <h2 style="font-size: 1.2rem; font-weight: 600; margin: 0 0 16px;">All Movies</h2>
-    <div class="media-grid">
-        {% for movie in items %}
-            <a href="{% url 'movie_detail' movie.pk %}" class="card">
+    <h2 style="font-size: 1.2rem; font-weight: 600; margin: 0 0 16px;">{{ row.name }}</h2>
+    <div class="scroll-row" style="display: flex; overflow-x: auto; gap: 16px; padding-bottom: 16px; padding-top: 4px;">
+        {% for movie in row.items %}
+            <a href="{% url 'movie_detail' movie.pk %}" class="card scroll-card">
                 <img src="{{ movie.poster_url }}" alt="{{ movie.title }}">
-                <h3 class="card-title">{{ movie.title }}</h3>
+                <div class="card-info" style="padding: 12px;">
+                    <h3 style="margin: 0; font-size: 0.95rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ movie.title }}</h3>
+                </div>
             </a>
-        {% empty %}
-            <p style="color: var(--text-muted-gray); grid-column: 1 / -1;">No movies indexed yet.</p>
         {% endfor %}
     </div>
 </div>
+{% empty %}
+<div class="section">
+    <p class="empty-state">No movies available.</p>
+</div>
+{% endfor %}
 
 <style>
 .card:hover { transform: scale(1.03); }

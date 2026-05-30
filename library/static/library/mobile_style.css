@@ -584,6 +584,16 @@ h2 {
     font-size: 1.05rem;
 }
 
+.scroll-card {
+    flex: 0 0 auto;
+    width: 200px;
+}
+@media (max-width: 768px) {
+    .scroll-card {
+        width: 135px;
+    }
+}
+
 .card-info p,
 .card-info span {
     margin: 0;

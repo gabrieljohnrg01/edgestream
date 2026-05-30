@@ -17,7 +17,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.decorators import login_required
 
-from .models import Movie, Series, Season, Episode, MediaItem, ConversionTask, WatchlistItem, PlaybackProgress
+from .models import Movie, Series, Season, Episode, MediaItem, ConversionTask, WatchlistItem, PlaybackProgress, Genre
 from .tmdb import TMDB_IMAGE_BASE, clean_title, extract_title_year, fetch_tmdb_metadata, parse_date
 
 
@@ -202,24 +202,44 @@ def search(request):
 
 def movies(request):
     featured_movie = Movie.objects.filter(is_converted=True).order_by("-watch_count").first()
-    top_movies = Movie.objects.filter(is_converted=True).order_by("-watch_count")[:10]
-    all_movies = Movie.objects.filter(is_converted=True).order_by("title")
+    
+    genre_rows = []
+    
+    recently_added = Movie.objects.filter(is_converted=True).order_by("-date_added")[:15]
+    if recently_added.exists():
+        genre_rows.append({"name": "Recently Added", "items": recently_added})
+        
+    genres = Genre.objects.filter(movie__is_converted=True).distinct().order_by("name")
+    for genre in genres:
+        genre_movies = Movie.objects.filter(is_converted=True, genres=genre).order_by("-watch_count")[:15]
+        if genre_movies.exists():
+            genre_rows.append({"name": genre.name, "items": genre_movies})
+            
     context = {
         "featured": featured_movie,
-        "top_items": top_movies,
-        "items": all_movies,
+        "genre_rows": genre_rows,
     }
     return render(request, "library/movies.html", context)
 
 
 def series(request):
     featured_series = get_converted_series_queryset().order_by("-watch_count").first()
-    top_series = get_converted_series_queryset().order_by("-watch_count")[:10]
-    all_series = get_converted_series_queryset().order_by("title")
+    
+    genre_rows = []
+    
+    recently_added = get_converted_series_queryset().order_by("-date_added")[:15]
+    if recently_added.exists():
+        genre_rows.append({"name": "Recently Added", "items": recently_added})
+        
+    genres = Genre.objects.filter(series__seasons__episodes__is_converted=True).distinct().order_by("name")
+    for genre in genres:
+        genre_series = get_converted_series_queryset().filter(genres=genre).order_by("-watch_count")[:15]
+        if genre_series.exists():
+            genre_rows.append({"name": genre.name, "items": genre_series})
+            
     context = {
         "featured": featured_series,
-        "top_items": top_series,
-        "items": all_series,
+        "genre_rows": genre_rows,
     }
     return render(request, "library/series.html", context)
 

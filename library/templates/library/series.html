@@ -34,35 +34,26 @@
 </div>
 {% endif %}
 
-<!-- Top 10 Series Section -->
+<!-- Categorized Series Rows -->
+{% for row in genre_rows %}
 <div class="section" style="margin-bottom: 40px;">
-    <h2 style="font-size: 1.2rem; font-weight: 600; margin: 0 0 16px;">Top 10 Series</h2>
-    <div class="scroll-row" style="display: flex; overflow-x: auto; gap: 16px; padding-bottom: 8px;">
-        {% for series in top_items %}
-            <a href="{% url 'series_detail' series.pk %}" class="card" style="flex: 0 0 auto; width: 220px;">
+    <h2 style="font-size: 1.2rem; font-weight: 600; margin: 0 0 16px;">{{ row.name }}</h2>
+    <div class="scroll-row" style="display: flex; overflow-x: auto; gap: 16px; padding-bottom: 16px; padding-top: 4px;">
+        {% for series in row.items %}
+            <a href="{% url 'series_detail' series.pk %}" class="card scroll-card">
                 <img src="{{ series.poster_url }}" alt="{{ series.title }}">
-                <h3 class="card-title">{{ series.title }}</h3>
+                <div class="card-info" style="padding: 12px;">
+                    <h3 style="margin: 0; font-size: 0.95rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ series.title }}</h3>
+                </div>
             </a>
-        {% empty %}
-            <p style="color: var(--text-muted-gray);">No series available.</p>
         {% endfor %}
     </div>
 </div>
-
-<!-- All Series Section -->
-<div class="section" style="margin-bottom: 40px;">
-    <h2 style="font-size: 1.2rem; font-weight: 600; margin: 0 0 16px;">All TV Shows</h2>
-    <div class="media-grid">
-        {% for series in items %}
-            <a href="{% url 'series_detail' series.pk %}" class="card">
-                <img src="{{ series.poster_url }}" alt="{{ series.title }}">
-                <h3 class="card-title">{{ series.title }}</h3>
-            </a>
-        {% empty %}
-            <p style="color: var(--text-muted-gray); grid-column: 1 / -1;">No series indexed yet.</p>
-        {% endfor %}
-    </div>
+{% empty %}
+<div class="section">
+    <p class="empty-state">No series available.</p>
 </div>
+{% endfor %}
 
 <style>
 .card:hover { transform: scale(1.03); }

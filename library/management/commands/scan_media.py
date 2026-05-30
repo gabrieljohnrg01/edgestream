@@ -6,7 +6,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from library.models import Movie, Series, Season, Episode, ConversionTask
+from library.models import Movie, Series, Season, Episode, ConversionTask, Genre
 from library.tmdb import (
     TMDB_IMAGE_BASE,
     clean_title,
@@ -15,6 +15,7 @@ from library.tmdb import (
     fetch_season_details,
     fetch_episode_details,
     parse_date,
+    get_genre_names,
 )
 
 MEDIA_ROOT = os.environ.get("MEDIA_ROOT", str(settings.MEDIA_ROOT))
@@ -133,6 +134,15 @@ class Command(BaseCommand):
                 else:
                     self.stdout.write(self.style.SUCCESS(f"Updated MOVIE: {title_guess}"))
 
+                genre_ids = metadata.get("genre_ids", [])
+                genre_names = get_genre_names(genre_ids)
+                if genre_names:
+                    genres = []
+                    for g_name in genre_names:
+                        g, _ = Genre.objects.get_or_create(name=g_name)
+                        genres.append(g)
+                    movie.genres.set(genres)
+
                 if not movie.is_converted and not ConversionTask.objects.filter(file_path=file_path, status__in=[ConversionTask.STATUS_QUEUED, ConversionTask.STATUS_PROCESSING]).exists():
                     ConversionTask.objects.create(
                         file_path=file_path,
@@ -184,6 +194,15 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.SUCCESS(f"Added SERIES: {series_title}"))
                 else:
                     self.stdout.write(self.style.SUCCESS(f"Updated SERIES: {series_title}"))
+
+                genre_ids = metadata.get("genre_ids", [])
+                genre_names = get_genre_names(genre_ids)
+                if genre_names:
+                    genres = []
+                    for g_name in genre_names:
+                        g, _ = Genre.objects.get_or_create(name=g_name)
+                        genres.append(g)
+                    series.genres.set(genres)
 
                 # Fetch season details for poster
                 season_details = fetch_season_details(tmdb_id, season_num)
