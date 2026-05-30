@@ -51,8 +51,8 @@
 
 <!-- All Series Section -->
 <div class="section" style="margin-bottom: 40px;">
-    <h2 style="font-size: 1.2rem; font-weight: 600; margin: 0 0 16px;">All Series</h2>
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px;">
+    <h2 style="font-size: 1.2rem; font-weight: 600; margin: 0 0 16px;">All TV Shows</h2>
+    <div class="media-grid">
         {% for series in items %}
             <a href="{% url 'series_detail' series.pk %}" class="card">
                 <img src="{{ series.poster_url }}" alt="{{ series.title }}">

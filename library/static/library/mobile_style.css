@@ -537,10 +537,16 @@ h2 {
     font-size: 1.4rem;
 }
 
-.grid {
+.media-grid, .grid {
     display: grid;
-    gap: 20px;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+@media (max-width: 768px) {
+    .media-grid, .grid {
+        grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+        gap: 12px;
+    }
 }
 
 .card {
@@ -564,7 +570,7 @@ h2 {
 
 .card img {
     width: 100%;
-    height: 320px;
+    aspect-ratio: 2/3;
     object-fit: cover;
     background: #111827;
 }
@@ -627,8 +633,14 @@ h2 {
 
 .seasons-grid {
     display: grid;
-    gap: 20px;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+}
+@media (max-width: 768px) {
+    .seasons-grid {
+        grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+        gap: 12px;
+    }
 }
 
 .season-card {
@@ -652,14 +664,14 @@ h2 {
 
 .season-card img {
     width: 100%;
-    height: 280px;
+    aspect-ratio: 2/3;
     object-fit: cover;
     background: #111827;
 }
 
 .season-placeholder {
     width: 100%;
-    height: 280px;
+    aspect-ratio: 2/3;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -703,8 +715,18 @@ h2 {
 
 .episodes-grid {
     display: grid;
-    gap: 20px;
+    gap: 16px;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+@media (max-width: 768px) {
+    .episodes-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 12px;
+    }
+    .episode-card img {
+        aspect-ratio: 16/9;
+        height: auto;
+    }
 }
 
 .episode-card {
@@ -728,7 +750,7 @@ h2 {
 
 .episode-card img {
     width: 100%;
-    height: 160px;
+    aspect-ratio: 16/9;
     object-fit: cover;
     background: #111827;
 }

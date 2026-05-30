@@ -52,7 +52,7 @@
 <!-- All Movies Section -->
 <div class="section" style="margin-bottom: 40px;">
     <h2 style="font-size: 1.2rem; font-weight: 600; margin: 0 0 16px;">All Movies</h2>
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px;">
+    <div class="media-grid">
         {% for movie in items %}
             <a href="{% url 'movie_detail' movie.pk %}" class="card">
                 <img src="{{ movie.poster_url }}" alt="{{ movie.title }}">
