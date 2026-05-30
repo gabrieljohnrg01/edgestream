@@ -284,6 +284,26 @@ body.playback-page {
     }
 }
 
+/* Loading Spinner */
+.loading-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    border: 5px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    border-top-color: #e50914;
+    animation: spin 1s ease-in-out infinite;
+    z-index: 50;
+    display: none;
+    pointer-events: none;
+}
+@keyframes spin {
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
 /* Ensure native subtitles render above custom controls */
 video::-webkit-media-text-track-display {
     transform: translateY(-80px) !important;
@@ -301,6 +321,8 @@ video::cue {
             <a href="{% url 'series_detail' episode.season.series.pk %}" class="back-link"><i class="bi bi-arrow-left"></i> Back to Series</a>
             <h2 style="color: white; margin-left: 20px; font-weight: 400; display: inline-block;">S{{ episode.season.season_number }}E{{ episode.episode_number }} - {{ episode.title }}</h2>
         </div>
+        
+        <div class="loading-spinner" id="loading-spinner"></div>
         
         <video id="video-player" playsinline poster="{{ episode.still_url }}" onclick="togglePlay()">
             {% if fallback_file and not hls_playlist %}
@@ -363,6 +385,7 @@ const durationDisplay = document.getElementById('duration');
 const muteBtn = document.getElementById('mute-btn');
 const settingsMenu = document.getElementById('settings-menu');
 const aspectBtn = document.getElementById('aspect-btn');
+const loadingSpinner = document.getElementById('loading-spinner');
 let hls;
 let isCover = true;
 aspectBtn.innerHTML = '<i class="bi bi-aspect-ratio-fill"></i>';
@@ -389,10 +412,30 @@ document.addEventListener('DOMContentLoaded', () => {
         hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
             buildSettingsMenu(hls);
         });
+        
+        hls.on(Hls.Events.ERROR, function (event, data) {
+            if (data.fatal) {
+                switch (data.type) {
+                    case Hls.ErrorTypes.NETWORK_ERROR:
+                        hls.startLoad();
+                        break;
+                    case Hls.ErrorTypes.MEDIA_ERROR:
+                        hls.recoverMediaError();
+                        break;
+                    default:
+                        hls.destroy();
+                        break;
+                }
+            }
+        });
     } else if (source.indexOf('.m3u8') !== -1) {
         video.src = source;
     }
 });
+
+video.addEventListener('waiting', () => { loadingSpinner.style.display = 'block'; });
+video.addEventListener('playing', () => { loadingSpinner.style.display = 'none'; });
+video.addEventListener('canplay', () => { loadingSpinner.style.display = 'none'; });
 
 let settingsView = 'main';
 let selectedQualityIndex = -1;
