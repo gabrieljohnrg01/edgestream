@@ -169,9 +169,11 @@ def index(request):
     
     # Get featured item (top watched, or random from top 10)
     featured = top_items[0] if top_items else None
+    featured_items = top_items[:4] if top_items else []
     
     context = {
         "featured": featured,
+        "featured_items": featured_items,
         "recently_added": recently_added,
         "top_items": top_items,
         "all_movies": all_movies,

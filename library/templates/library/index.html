@@ -2,37 +2,100 @@
 {% block content %}
 
 <!-- Featured Hero Section -->
-{% if featured %}
-<div class="hero-section" style="margin-bottom: 40px; position: relative; border-radius: 12px; overflow: hidden; height: 50vh; min-height: 400px; display: flex; align-items: center; padding: 40px;">
-    <div class="hero-bg" style="position: absolute; inset: 0; background-image: url('{{ featured.poster_url }}'); background-size: cover; background-position: center top;"></div>
-    <div style="position: absolute; inset: 0; background: linear-gradient(to right, rgba(10, 10, 13, 0.95) 0%, rgba(10, 10, 13, 0.7) 40%, transparent 100%);"></div>
-    <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(10, 10, 13, 1) 0%, transparent 30%);"></div>
-    <div class="hero-content" style="position: relative; z-index: 10; max-width: 600px;">
-        <div class="hero-type" style="color: var(--accent-crimson); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; font-size: 0.8rem;">
-            FEATURED
-        </div>
-        <img src="/static/library/logo.png" style="display:none;" alt=""> <!-- Fallback if needed -->
-        <h1 style="font-size: 3.5rem; margin: 0 0 16px; line-height: 1.1; font-weight: 800; letter-spacing: 2px;">{{ featured.title }}</h1>
-        {% if featured.description %}
-        <p style="font-size: 1rem; color: var(--text-muted-gray); margin-bottom: 30px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.6;">{{ featured.description }}</p>
-        {% endif %}
-        <div class="hero-actions" style="display: flex; gap: 16px;">
-            <a href="{% if featured.seasons %}{% url 'series_detail' featured.pk %}{% else %}{% url 'movie_detail' featured.pk %}{% endif %}" class="btn-primary" style="background: var(--accent-crimson); color: white; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 10px; transition: background 0.2s;">
-                <i class="bi bi-play-fill" style="font-size: 1.2rem;"></i> Play Now
-            </a>
-            <a href="{% if featured.seasons %}{% url 'series_detail' featured.pk %}{% else %}{% url 'movie_detail' featured.pk %}{% endif %}" class="btn-secondary" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 10px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
-                <i class="bi bi-plus-lg"></i> My List
-            </a>
-        </div>
+{% if featured_items %}
+<div class="hero-carousel" style="position: relative; margin-bottom: 40px; border-radius: 12px; overflow: hidden; height: 50vh; min-height: 400px;">
+    {% for item in featured_items %}
+    <div class="hero-slide {% if forloop.first %}active{% endif %}" data-index="{{ forloop.counter0 }}" style="position: absolute; inset: 0; opacity: {% if forloop.first %}1{% else %}0{% endif %}; transition: opacity 0.8s ease-in-out; display: flex; align-items: center; padding: 40px; pointer-events: {% if forloop.first %}auto{% else %}none{% endif %};">
+        <div class="hero-bg" style="position: absolute; inset: 0; background-image: url('{{ item.poster_url }}'); background-size: cover; background-position: center top;"></div>
+        <div style="position: absolute; inset: 0; background: linear-gradient(to right, rgba(10, 10, 13, 0.95) 0%, rgba(10, 10, 13, 0.7) 40%, transparent 100%);"></div>
+        <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(10, 10, 13, 1) 0%, transparent 30%);"></div>
         
-        <div class="hero-indicators" style="display: flex; gap: 8px; margin-top: 40px;">
-            <div style="width: 24px; height: 4px; background: var(--accent-crimson); border-radius: 2px;"></div>
-            <div style="width: 12px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px;"></div>
-            <div style="width: 12px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px;"></div>
-            <div style="width: 12px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px;"></div>
+        <div class="hero-content" style="position: relative; z-index: 10; max-width: 600px;">
+            <div class="hero-type" style="color: var(--accent-crimson); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; font-size: 0.8rem;">
+                FEATURED
+            </div>
+            <h1 style="font-size: 3.5rem; margin: 0 0 16px; line-height: 1.1; font-weight: 800; letter-spacing: 2px;">{{ item.title }}</h1>
+            {% if item.description %}
+            <p style="font-size: 1rem; color: var(--text-muted-gray); margin-bottom: 30px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.6;">{{ item.description }}</p>
+            {% endif %}
+            
+            <div class="hero-actions" style="display: flex; gap: 16px;">
+                <a href="{% if item.seasons %}{% url 'series_detail' item.pk %}{% else %}{% url 'movie_detail' item.pk %}{% endif %}" class="btn-primary" style="background: var(--accent-crimson); color: white; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 10px; transition: background 0.2s;">
+                    <i class="bi bi-play-fill" style="font-size: 1.2rem;"></i> Play Now
+                </a>
+                <a href="{% if item.seasons %}{% url 'series_detail' item.pk %}{% else %}{% url 'movie_detail' item.pk %}{% endif %}" class="btn-secondary" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 10px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+                    <i class="bi bi-plus-lg"></i> My List
+                </a>
+            </div>
         </div>
     </div>
+    {% endfor %}
+    
+    <!-- Carousel Indicators -->
+    <div class="hero-indicators" style="position: absolute; bottom: 40px; left: 40px; z-index: 20; display: flex; gap: 8px;">
+        {% for item in featured_items %}
+        <div class="carousel-dot {% if forloop.first %}active{% endif %}" data-index="{{ forloop.counter0 }}" style="width: {% if forloop.first %}24px{% else %}12px{% endif %}; height: 4px; background: {% if forloop.first %}var(--accent-crimson){% else %}rgba(255,255,255,0.2){% endif %}; border-radius: 2px; cursor: pointer; transition: all 0.3s ease;"></div>
+        {% endfor %}
+    </div>
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const slides = document.querySelectorAll('.hero-slide');
+        const dots = document.querySelectorAll('.carousel-dot');
+        if(slides.length <= 1) return;
+        
+        let currentIndex = 0;
+        const totalSlides = slides.length;
+        let slideInterval;
+        
+        function goToSlide(index) {
+            // Reset old slide
+            slides[currentIndex].style.opacity = '0';
+            slides[currentIndex].style.pointerEvents = 'none';
+            slides[currentIndex].classList.remove('active');
+            dots[currentIndex].style.width = '12px';
+            dots[currentIndex].style.background = 'rgba(255,255,255,0.2)';
+            dots[currentIndex].classList.remove('active');
+            
+            currentIndex = index;
+            
+            // Set new slide
+            slides[currentIndex].style.opacity = '1';
+            slides[currentIndex].style.pointerEvents = 'auto';
+            slides[currentIndex].classList.add('active');
+            dots[currentIndex].style.width = '24px';
+            dots[currentIndex].style.background = 'var(--accent-crimson)';
+            dots[currentIndex].classList.add('active');
+        }
+        
+        function nextSlide() {
+            let nextIndex = (currentIndex + 1) % totalSlides;
+            goToSlide(nextIndex);
+        }
+        
+        function startCarousel() {
+            slideInterval = setInterval(nextSlide, 7000);
+        }
+        
+        function stopCarousel() {
+            clearInterval(slideInterval);
+        }
+        
+        dots.forEach(dot => {
+            dot.addEventListener('click', function() {
+                stopCarousel();
+                let index = parseInt(this.getAttribute('data-index'));
+                if(index !== currentIndex) {
+                    goToSlide(index);
+                }
+                startCarousel();
+            });
+        });
+        
+        startCarousel();
+    });
+</script>
 {% endif %}
 
 {% if user.is_authenticated %}
