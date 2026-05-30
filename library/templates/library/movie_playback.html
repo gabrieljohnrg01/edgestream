@@ -424,12 +424,15 @@ function buildSettingsMenu(hlsInstance) {
         activeSub = activeSub.replace(/^\d+_+/g, ''); // Clean up 0_Spa
         
         let activeQual = "Auto";
-        if (hlsInstance && hlsInstance.currentLevel !== -1 && hlsInstance.levels[hlsInstance.currentLevel]) {
-            const currentHeight = hlsInstance.levels[hlsInstance.currentLevel].height + 'p';
-            if (hlsInstance.nextLevel === -1 || hlsInstance.autoLevelEnabled) {
-                activeQual = `Auto (${currentHeight})`;
+        if (hlsInstance && hlsInstance.levels) {
+            if (hlsInstance.autoLevelEnabled) {
+                if (hlsInstance.currentLevel !== -1 && hlsInstance.levels[hlsInstance.currentLevel]) {
+                    activeQual = `Auto (${hlsInstance.levels[hlsInstance.currentLevel].height}p)`;
+                }
             } else {
-                activeQual = currentHeight;
+                if (hlsInstance.currentLevel !== -1 && hlsInstance.levels[hlsInstance.currentLevel]) {
+                    activeQual = hlsInstance.levels[hlsInstance.currentLevel].height + 'p';
+                }
             }
         }
 
@@ -450,14 +453,14 @@ function buildSettingsMenu(hlsInstance) {
         
         if (settingsView === 'quality') {
             if (hlsInstance && hlsInstance.levels) {
-                settingsMenu.appendChild(createOptionItem('Auto', hlsInstance.nextLevel === -1, () => {
-                    hlsInstance.nextLevel = -1;
+                settingsMenu.appendChild(createOptionItem('Auto', hlsInstance.autoLevelEnabled, () => {
+                    hlsInstance.currentLevel = -1;
                     settingsView = 'main'; buildSettingsMenu(hlsInstance);
                 }));
                 const sortedLevels = hlsInstance.levels.map((l, i) => ({...l, index: i})).sort((a,b) => b.height - a.height);
                 sortedLevels.forEach(level => {
-                    settingsMenu.appendChild(createOptionItem(level.height + 'p', hlsInstance.nextLevel === level.index, () => {
-                        hlsInstance.nextLevel = level.index;
+                    settingsMenu.appendChild(createOptionItem(level.height + 'p', !hlsInstance.autoLevelEnabled && hlsInstance.currentLevel === level.index, () => {
+                        hlsInstance.currentLevel = level.index;
                         settingsView = 'main'; buildSettingsMenu(hlsInstance);
                     }));
                 });
