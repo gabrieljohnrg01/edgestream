@@ -196,13 +196,25 @@ class Command(BaseCommand):
         import re
         process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, universal_newlines=True)
         time_pattern = re.compile(r"time=(\d{2}):(\d{2}):(\d{2}\.\d+)")
+        duration_pattern = re.compile(r"Duration: (\d{2}):(\d{2}):(\d{2}\.\d+)")
+        local_total_seconds = total_seconds
         
         for line in process.stdout:
+            if local_total_seconds <= 1:
+                d_match = duration_pattern.search(line)
+                if d_match:
+                    dh, dm, ds = d_match.groups()
+                    local_total_seconds = int(dh) * 3600 + int(dm) * 60 + float(ds)
+                    from django.utils import timezone
+                    if task.movie and not task.movie.duration:
+                        task.movie.duration = timezone.timedelta(seconds=local_total_seconds)
+                        task.movie.save(update_fields=["duration"])
+                    
             match = time_pattern.search(line)
-            if match:
+            if match and local_total_seconds > 0:
                 h, m, s = match.groups()
                 current_seconds = int(h) * 3600 + int(m) * 60 + float(s)
-                variant_progress = current_seconds / total_seconds
+                variant_progress = min(current_seconds / local_total_seconds, 1.0)
                 overall_progress = int(((current_step + variant_progress) / total_variants) * 100)
                 if overall_progress > task.progress:
                     task.progress = min(overall_progress, 99)

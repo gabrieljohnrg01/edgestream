@@ -272,6 +272,7 @@ body.playback-page {
 
 <script>
 const userIsRegistered = {{ request.user.is_authenticated|yesno:"true,false" }};
+const backendDuration = {{ movie.duration.total_seconds|default:"0" }};
 
 const video = document.getElementById('video-player');
 const container = document.getElementById('player-container');
@@ -442,7 +443,8 @@ function toggleMute() {
 {% if user.is_authenticated %}
 let lastSyncTime = 0;
 video.addEventListener('timeupdate', () => {
-    const percent = (video.currentTime / video.duration) * 100;
+    const activeDuration = (isFinite(video.duration) && video.duration > 0) ? video.duration : backendDuration;
+    const percent = activeDuration > 0 ? (video.currentTime / activeDuration) * 100 : 0;
     progressFilled.style.width = `${percent}%`;
     currentTimeDisplay.innerText = formatTime(video.currentTime);
     
@@ -450,7 +452,7 @@ video.addEventListener('timeupdate', () => {
     const currentTime = video.currentTime;
     if (Math.abs(currentTime - lastSyncTime) > 10) {
         lastSyncTime = currentTime;
-        const isFinished = video.duration > 0 && (video.duration - currentTime) < 30; // mark finished if < 30s left
+        const isFinished = activeDuration > 0 && (activeDuration - currentTime) < 30; // mark finished if < 30s left
         fetch("{% url 'api_update_progress' %}", {
             method: 'POST',
             headers: {
@@ -468,7 +470,8 @@ video.addEventListener('timeupdate', () => {
 });
 {% else %}
 video.addEventListener('timeupdate', () => {
-    const percent = (video.currentTime / video.duration) * 100;
+    const activeDuration = (isFinite(video.duration) && video.duration > 0) ? video.duration : backendDuration;
+    const percent = activeDuration > 0 ? (video.currentTime / activeDuration) * 100 : 0;
     progressFilled.style.width = `${percent}%`;
     currentTimeDisplay.innerText = formatTime(video.currentTime);
 });
@@ -478,7 +481,8 @@ let savedTimestamp = {{ saved_timestamp|default:0 }};
 let hasResumed = false;
 
 video.addEventListener('loadedmetadata', () => {
-    durationDisplay.innerText = formatTime(video.duration);
+    const activeDuration = (isFinite(video.duration) && video.duration > 0) ? video.duration : backendDuration;
+    durationDisplay.innerText = formatTime(activeDuration);
     if(savedTimestamp > 0 && !hasResumed) {
         video.currentTime = savedTimestamp;
         hasResumed = true;
@@ -486,9 +490,10 @@ video.addEventListener('loadedmetadata', () => {
 });
 
 function seek(e) {
+    const activeDuration = (isFinite(video.duration) && video.duration > 0) ? video.duration : backendDuration;
     const rect = progressContainer.getBoundingClientRect();
     const pos = (e.clientX - rect.left) / rect.width;
-    video.currentTime = pos * video.duration;
+    video.currentTime = pos * activeDuration;
 }
 
 function formatTime(seconds) {

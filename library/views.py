@@ -124,6 +124,21 @@ def get_media_duration(file_path):
         elif not duration_path.is_absolute():
             duration_path = MEDIA_ROOT / duration_path
 
+        try:
+            import imageio_ffmpeg
+            ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+        except ImportError:
+            ffmpeg_exe = "ffmpeg"
+            
+        import re
+        result = subprocess.run([ffmpeg_exe, "-i", str(duration_path)], capture_output=True, text=True, timeout=20)
+        match = re.search(r"Duration: (\d{2}):(\d{2}):(\d{2}\.\d+)", result.stderr)
+        if match:
+            h, m, s = match.groups()
+            seconds = int(h) * 3600 + int(m) * 60 + float(s)
+            return timezone.timedelta(seconds=seconds)
+            
+        # Fallback to ffprobe if ffmpeg didn't find it
         result = subprocess.run(
             [
                 "ffprobe",
