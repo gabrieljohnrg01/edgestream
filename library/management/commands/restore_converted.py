@@ -35,21 +35,52 @@ class Command(BaseCommand):
             for d in movies_dir.iterdir():
                 if d.is_dir():
                     self.stdout.write(f"Found folder: {d.name}")
-                    m3u8_files = list(d.glob("*.m3u8"))
-                    if m3u8_files:
-                        m3u8_file = m3u8_files[0]
-                        self.stdout.write(f"Found playlist: {m3u8_file.name}")
-                        movie = None
-                        for m in Movie.objects.all():
-                            if Path(m.file_path).stem == d.name:
-                                movie = m
+                    # Find all m3u8 files recursively
+                    m3u8_files = list(d.rglob("*.m3u8"))
+                    master_playlist = None
+                    
+                    # Find the master playlist (it contains EXT-X-STREAM-INF)
+                    for m3u8 in m3u8_files:
+                        try:
+                            content = m3u8.read_text(encoding='utf-8')
+                            if "EXT-X-STREAM-INF" in content:
+                                master_playlist = m3u8
                                 break
+                        except Exception:
+                            pass
+                    
+                    # Fallback to the shortest path if no master playlist tag found
+                    if not master_playlist and m3u8_files:
+                        master_playlist = sorted(m3u8_files, key=lambda p: len(p.parts))[0]
+
+                    if master_playlist:
+                        self.stdout.write(f"Found master playlist: {master_playlist.relative_to(HLS_ROOT)}")
+                        
+                        # Reconstruct the original file_path that views.py expects
+                        # HLS path: movies/Folder/Subfolder/Subfolder.m3u8
+                        # Original path: /media/movies/Folder/Subfolder.mkv
+                        rel_hls_dir = master_playlist.parent.relative_to(HLS_ROOT) # e.g. movies/Folder/Subfolder
+                        fake_path = f"/media/{rel_hls_dir}.mkv"
+                        
+                        movie = Movie.objects.filter(file_path=fake_path).first()
                         
                         if not movie:
-                            self.stdout.write(f"Missing movie found in HLS: {d.name}, rebuilding from TMDB...")
-                            title, year = extract_title_year(d.name)
+                            # Try matching by title if file_path changed
+                            title_search = extract_title_year(master_playlist.parent.name)[0]
+                            movie = Movie.objects.filter(title__icontains=title_search).first()
+                            
+                        if not movie:
+                            self.stdout.write(f"Missing movie found in HLS: {master_playlist.parent.name}, rebuilding from TMDB...")
+                            title, year = extract_title_year(master_playlist.parent.name)
+                            
+                            # If it's a nested folder, maybe the parent folder has a cleaner name for TMDB
+                            if d.name != master_playlist.parent.name:
+                                parent_title, parent_year = extract_title_year(d.name)
+                                # Only use parent title if it looks valid
+                                if parent_title and len(parent_title) > 2:
+                                    title, year = parent_title, parent_year
+                                    
                             tmdb_data = fetch_tmdb_metadata(title, "MOVIE", year)
-                            fake_path = f"/media/movies/{d.name}.mkv"
                             
                             poster_url = ""
                             if tmdb_data and tmdb_data.get("poster_path"):
@@ -70,14 +101,14 @@ class Command(BaseCommand):
                         # Fix flags
                         if not movie.is_converted or not movie.duration:
                             movie.is_converted = True
-                            dur = get_duration(m3u8_file)
+                            dur = get_duration(master_playlist)
                             if dur:
                                 movie.duration = dur
-                            movie.save(update_fields=['is_converted', 'duration'])
+                            # Fix file path if it differs
+                            if movie.file_path != fake_path:
+                                movie.file_path = fake_path
+                            movie.save(update_fields=['is_converted', 'duration', 'file_path'])
                             ConversionTask.objects.filter(movie=movie).delete()
                             self.stdout.write(self.style.SUCCESS(f"Fixed flags and duration for {movie.title}"))
                     else:
-                        self.stdout.write(self.style.ERROR(f"No .m3u8 file found in root of {d.name}"))
-                        self.stdout.write("Directory contents:")
-                        for child in d.iterdir():
-                            self.stdout.write(f"  - {child.name}")
+                        self.stdout.write(self.style.ERROR(f"No .m3u8 file found in {d.name}"))
