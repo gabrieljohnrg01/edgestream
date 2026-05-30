@@ -1,0 +1,37 @@
+{% extends "library/base.html" %}
+
+{% block content %}
+<div class="section" style="margin-bottom: 40px; min-height: 50vh;">
+    <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 24px;">My Watchlist</h2>
+    
+    {% if not items %}
+    <div style="text-align: center; padding: 60px 0;">
+        <i class="bi bi-bookmark" style="font-size: 4rem; color: var(--text-muted-gray);"></i>
+        <h4 style="color: var(--text-soft-white); margin-top: 24px; font-size: 1.2rem;">Your watchlist is empty</h4>
+        <p style="color: var(--text-muted-gray); margin-bottom: 24px;">Add movies and series to your watchlist to keep track of what you want to watch.</p>
+        <a href="{% url 'index' %}" class="btn-primary" style="background: var(--accent-crimson); color: white; padding: 10px 24px; border-radius: 999px; text-decoration: none; font-weight: 600;">Browse Catalog</a>
+    </div>
+    {% else %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px;">
+        {% for item in items %}
+            {% if item.movie %}
+            <a href="{% url 'movie_detail' item.movie.pk %}" class="card">
+                <img src="{{ item.movie.poster_url }}" alt="{{ item.movie.title }}" loading="lazy">
+                <h3 class="card-title">{{ item.movie.title }}</h3>
+                <p class="card-subtitle">Movie</p>
+            </a>
+            {% elif item.series %}
+            <a href="{% url 'series_detail' item.series.pk %}" class="card">
+                <img src="{{ item.series.poster_url }}" alt="{{ item.series.title }}" loading="lazy">
+                <h3 class="card-title">{{ item.series.title }}</h3>
+                <p class="card-subtitle">Series</p>
+            </a>
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+<style>
+.card:hover { transform: scale(1.03); }
+</style>
+{% endblock %}

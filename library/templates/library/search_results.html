@@ -1,0 +1,53 @@
+{% extends "library/base.html" %}
+{% block content %}
+<div class="content">
+    <div class="section">
+        <h1>Search Results</h1>
+        {% if query %}
+            <p class="mb-6 text-sm text-gray-300">Results for "{{ query }}".</p>
+        {% else %}
+            <p class="mb-6 text-sm text-gray-300">Enter a title to search movies and series.</p>
+        {% endif %}
+    </div>
+
+    {% if query %}
+        <div class="section">
+            <h2 class="text-lg font-semibold text-white mb-3">Movies</h2>
+            {% if movies.exists %}
+                <div class="grid">
+                    {% for movie in movies %}
+                        <a href="{% url 'movie_detail' movie.pk %}" class="card">
+                            <img src="{{ movie.poster_url }}" alt="{{ movie.title }} poster">
+                            <div class="card-info">
+                                <h2>{{ movie.title }}</h2>
+                                <p>{{ movie.release_date|date:"Y" }} · {{ movie.duration_display }}</p>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="empty-state">No matching movies found.</p>
+            {% endif %}
+        </div>
+
+        <div class="section">
+            <h2 class="text-lg font-semibold text-white mb-3">Series</h2>
+            {% if series.exists %}
+                <div class="grid">
+                    {% for item in series %}
+                        <a href="{% url 'series_detail' item.pk %}" class="card">
+                            <img src="{{ item.poster_url }}" alt="{{ item.title }} poster">
+                            <div class="card-info">
+                                <h2>{{ item.title }}</h2>
+                                <p>{{ item.release_date|date:"Y" }}</p>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="empty-state">No matching series found.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "library/base.html" %}
+{% block content %}
+
+<div class="section" style="margin-top: 20px; margin-bottom: 40px; display: flex; align-items: baseline; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px;">
+    <div>
+        <a href="{% url 'series_detail' series.pk %}" style="color: var(--accent-crimson); text-decoration: none; font-size: 0.9rem; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 12px;"><i class="bi bi-arrow-left"></i> Back to {{ series.title }}</a>
+        <h1 style="font-size: 2.5rem; font-weight: 800; color: var(--text-soft-white); margin: 0;">Season {{ season.season_number }}</h1>
+    </div>
+    <p style="color: var(--text-muted-gray); font-size: 1.1rem; margin: 0; font-weight: 500;">{{ episodes.count }} Episode{{ episodes.count|pluralize }}</p>
+</div>
+
+<div class="section">
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+        {% for episode in episodes %}
+            <a href="{% url 'episode_playback' episode.pk %}" class="card" style="aspect-ratio: auto; height: auto;">
+                {% if episode.still_url %}
+                    <img src="{{ episode.still_url }}" alt="Episode {{ episode.episode_number }}" style="aspect-ratio: 16/9; object-fit: cover;">
+                {% else %}
+                    <div style="aspect-ratio: 16/9; background: var(--bg-charcoal); display: flex; align-items: center; justify-content: center; border-radius: 8px 8px 0 0;">
+                        <span style="font-size: 1.5rem; font-weight: 700; color: rgba(255,255,255,0.2);">E{{ episode.episode_number|stringformat:"02d" }}</span>
+                    </div>
+                {% endif %}
+                <div style="padding: 16px; flex-grow: 1;">
+                    <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text-soft-white); margin: 0 0 4px;">{{ episode.episode_number }}. {% if episode.title %}{{ episode.title }}{% else %}Episode {{ episode.episode_number }}{% endif %}</h3>
+                    {% if episode.description %}
+                        <p style="font-size: 0.9rem; color: var(--text-muted-gray); line-height: 1.5; margin: 8px 0 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">{{ episode.description }}</p>
+                    {% endif %}
+                </div>
+            </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends "library/base.html" %}
+{% block content %}
+
+<!-- Featured Hero Section -->
+{% if featured %}
+<div class="hero-section" style="margin-bottom: 40px; position: relative; border-radius: 12px; overflow: hidden; height: 50vh; min-height: 400px; display: flex; align-items: center; padding: 40px;">
+    <div class="hero-bg" style="position: absolute; inset: 0; background-image: url('{{ featured.poster_url }}'); background-size: cover; background-position: center top;"></div>
+    <div style="position: absolute; inset: 0; background: linear-gradient(to right, rgba(10, 10, 13, 0.95) 0%, rgba(10, 10, 13, 0.7) 40%, transparent 100%);"></div>
+    <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(10, 10, 13, 1) 0%, transparent 30%);"></div>
+    <div class="hero-content" style="position: relative; z-index: 10; max-width: 600px;">
+        <div class="hero-type" style="color: var(--accent-crimson); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; font-size: 0.8rem;">
+            FEATURED
+        </div>
+        <img src="/static/library/logo.png" style="display:none;" alt=""> <!-- Fallback if needed -->
+        <h1 style="font-size: 3.5rem; margin: 0 0 16px; line-height: 1.1; font-weight: 800; letter-spacing: 2px;">{{ featured.title }}</h1>
+        {% if featured.description %}
+        <p style="font-size: 1rem; color: var(--text-muted-gray); margin-bottom: 30px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.6;">{{ featured.description }}</p>
+        {% endif %}
+        <div class="hero-actions" style="display: flex; gap: 16px;">
+            <a href="{% if featured.seasons %}{% url 'series_detail' featured.pk %}{% else %}{% url 'movie_detail' featured.pk %}{% endif %}" class="btn-primary" style="background: var(--accent-crimson); color: white; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 10px; transition: background 0.2s;">
+                <i class="bi bi-play-fill" style="font-size: 1.2rem;"></i> Play Now
+            </a>
+            <a href="{% if featured.seasons %}{% url 'series_detail' featured.pk %}{% else %}{% url 'movie_detail' featured.pk %}{% endif %}" class="btn-secondary" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 10px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+                <i class="bi bi-plus-lg"></i> My List
+            </a>
+        </div>
+        
+        <div class="hero-indicators" style="display: flex; gap: 8px; margin-top: 40px;">
+            <div style="width: 24px; height: 4px; background: var(--accent-crimson); border-radius: 2px;"></div>
+            <div style="width: 12px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px;"></div>
+            <div style="width: 12px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px;"></div>
+            <div style="width: 12px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px;"></div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if user.is_authenticated %}
+    {% if continue_watching %}
+    <div class="section" style="margin-bottom: 40px;">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px;">
+            <h2 style="font-size: 1.2rem; font-weight: 600; margin: 0;">Continue Watching</h2>
+            <a href="#" style="color: var(--accent-crimson); text-decoration: none; font-size: 0.9rem; font-weight: 500;">View All <i class="bi bi-chevron-right" style="font-size: 0.8rem;"></i></a>
+        </div>
+        <div class="scroll-row" style="display: flex; overflow-x: auto; gap: 16px; padding-bottom: 16px; padding-top: 4px;">
+            {% for progress in continue_watching %}
+                {% if progress.movie %}
+                    <a href="{% url 'movie_playback' progress.movie.pk %}" class="card" style="flex: 0 0 auto; width: 220px;">
+                        <div style="position: relative;">
+                            <img src="{{ progress.movie.poster_url }}" alt="{{ progress.movie.title }}">
+                            <div style="position: absolute; bottom: 12px; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.2); overflow: hidden;">
+                                <div style="height: 100%; width: 50%; background: var(--accent-crimson);"></div>
+                            </div>
+                        </div>
+                        <h3 class="card-title">{{ progress.movie.title }}</h3>
+                        <p class="card-subtitle">Resume</p>
+                    </a>
+                {% elif progress.episode %}
+                    <a href="{% url 'episode_playback' progress.episode.pk %}" class="card" style="flex: 0 0 auto; width: 220px;">
+                        <div style="position: relative;">
+                            <img src="{{ progress.episode.season.series.poster_url }}" alt="{{ progress.episode.season.series.title }}">
+                            <div style="position: absolute; bottom: 12px; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.2); overflow: hidden;">
+                                <div style="height: 100%; width: 50%; background: var(--accent-crimson);"></div>
+                            </div>
+                        </div>
+                        <h3 class="card-title">{{ progress.episode.season.series.title }}</h3>
+                        <p class="card-subtitle">S{{ progress.episode.season.season_number }} &bull; E{{ progress.episode.episode_number }}</p>
+                    </a>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="section" style="margin-bottom: 40px;">
+        <h2 style="font-size: 1.2rem; font-weight: 600; margin: 0 0 16px;">Categories</h2>
+        <div style="display: flex; gap: 16px;">
+            <a href="/movies/" class="category-card" style="flex: 1; height: 100px; border-radius: 8px; background: linear-gradient(rgba(26,29,34,0.8), rgba(26,29,34,0.9)), url('https://image.tmdb.org/t/p/w500/8RpDcsfLJypbO6vtec8O51IFeg.jpg'); background-size: cover; background-position: center; display: flex; align-items: center; padding: 20px; text-decoration: none; border: 1px solid rgba(255,255,255,0.05); transition: border-color 0.2s;">
+                <i class="bi bi-film" style="font-size: 2rem; color: var(--text-muted-gray); margin-right: 16px;"></i>
+                <div>
+                    <h3 style="margin: 0; color: var(--text-soft-white); font-size: 1.1rem; font-weight: 600;">Movies</h3>
+                    <p style="margin: 4px 0 0; color: var(--text-muted-gray); font-size: 0.85rem;">Browse all movies</p>
+                </div>
+            </a>
+            <a href="/series/" class="category-card" style="flex: 1; height: 100px; border-radius: 8px; background: linear-gradient(rgba(26,29,34,0.8), rgba(26,29,34,0.9)), url('https://image.tmdb.org/t/p/w500/u3bZgnGQ9T01sWNhyveQz0wH0Hl.jpg'); background-size: cover; background-position: center; display: flex; align-items: center; padding: 20px; text-decoration: none; border: 1px solid rgba(255,255,255,0.05); transition: border-color 0.2s;">
+                <i class="bi bi-tv" style="font-size: 2rem; color: var(--text-muted-gray); margin-right: 16px;"></i>
+                <div>
+                    <h3 style="margin: 0; color: var(--text-soft-white); font-size: 1.1rem; font-weight: 600;">TV Shows</h3>
+                    <p style="margin: 4px 0 0; color: var(--text-muted-gray); font-size: 0.85rem;">Browse all series</p>
+                </div>
+            </a>
+        </div>
+    </div>
+{% endif %}
+
+<!-- Trending Now Section -->
+<div class="section" style="margin-bottom: 40px;">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px;">
+        <h2 style="font-size: 1.2rem; font-weight: 600; margin: 0;">Trending Now</h2>
+        <a href="/movies/" style="color: var(--accent-crimson); text-decoration: none; font-size: 0.9rem; font-weight: 500;">View All <i class="bi bi-chevron-right" style="font-size: 0.8rem;"></i></a>
+    </div>
+    <div class="scroll-row" style="display: flex; overflow-x: auto; gap: 16px; padding-bottom: 16px; padding-top: 4px;">
+        {% for item in top_items %}
+            <a href="{% if item.seasons %}{% url 'series_detail' item.pk %}{% else %}{% url 'movie_detail' item.pk %}{% endif %}" class="card" style="flex: 0 0 auto; width: 220px;">
+                <img src="{{ item.poster_url }}" alt="{{ item.title }}">
+                <h3 class="card-title">{{ item.title }}</h3>
+            </a>
+        {% empty %}
+            <p style="color: var(--text-muted-gray);">No items available.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

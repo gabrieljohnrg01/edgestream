@@ -1,0 +1,120 @@
+{% extends "library/base.html" %}
+{% block content %}
+<div class="content">
+    <div class="section">
+        <h1>Conversion Queue</h1>
+        <p class="mb-6 text-sm text-gray-300">Monitor queued HLS conversions, active processing, completed tasks, and failed items.</p>
+
+        <div class="grid status-grid">
+            <div class="status-card status-queued">
+                <p class="status-label">Queued</p>
+                <p class="status-value">{{ counts.queued }}</p>
+            </div>
+            <div class="status-card status-processing">
+                <p class="status-label">Processing</p>
+                <p class="status-value">{{ counts.processing }}</p>
+            </div>
+            <div class="status-card status-completed">
+                <p class="status-label">Completed</p>
+                <p class="status-value">{{ counts.completed }}</p>
+            </div>
+            <div class="status-card status-failed">
+                <p class="status-label">Failed</p>
+                <p class="status-value">{{ counts.failed }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Queue Tasks</h2>
+        <div class="table-wrap">
+            <table class="queue-table">
+                <thead>
+                    <tr>
+                        <th>Task</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Updated</th>
+                        <th>Error</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for task in tasks %}
+                    <tr data-task-id="{{ task.id }}">
+                        <td>
+                            <div class="task-title">{{ task.file_name }}</div>
+                            {% if task.movie %}
+                                <div class="task-subtitle">Movie: {{ task.movie.title }}</div>
+                            {% elif task.episode %}
+                                <div class="task-subtitle">Episode: {{ task.episode.season.series.title }} S{{ task.episode.season.season_number }}E{{ task.episode.episode_number }}</div>
+                            {% else %}
+                                <div class="task-subtitle">Unknown media</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if task.movie %}Movie{% elif task.episode %}Episode{% else %}Unknown{% endif %}
+                        </td>
+                        <td>
+                            <span class="status-pill status-{{ task.status|lower }}">{{ task.status }}</span>
+                            <div class="progress-bar-bg mt-2" style="{% if task.status != 'PROCESSING' and task.status != 'COMPLETED' %}display: none;{% endif %}">
+                                <div class="progress-bar-fill" style="width: {{ task.progress|default:0 }}%;"></div>
+                            </div>
+                            <div class="progress-text text-xs text-gray-400 mt-1" style="{% if task.status != 'PROCESSING' and task.status != 'COMPLETED' %}display: none;{% endif %}">{{ task.progress|default:0 }}%</div>
+                        </td>
+                        <td>{{ task.created_at|date:"Y-m-d H:i" }}</td>
+                        <td class="updated-cell">{{ task.updated_at|date:"Y-m-d H:i" }}</td>
+                        <td class="error-cell">{{ task.error_message|default:"—" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="empty-state">No queue tasks available.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    setInterval(function() {
+        fetch('/api/queue/')
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.querySelector('.queue-table tbody');
+                if (!tbody) return;
+                data.tasks.forEach(task => {
+                    const tr = tbody.querySelector(`tr[data-task-id="${task.id}"]`);
+                    if (tr) {
+                        const pill = tr.querySelector('.status-pill');
+                        pill.className = `status-pill status-${task.status.toLowerCase()}`;
+                        pill.textContent = task.status;
+                        
+                        const bg = tr.querySelector('.progress-bar-bg');
+                        const fill = tr.querySelector('.progress-bar-fill');
+                        const text = tr.querySelector('.progress-text');
+                        
+                        if (task.status === 'PROCESSING' || task.status === 'COMPLETED') {
+                            bg.style.display = 'block';
+                            text.style.display = 'block';
+                            fill.style.width = (task.progress || 0) + '%';
+                            text.textContent = (task.progress || 0) + '%';
+                        } else {
+                            bg.style.display = 'none';
+                            text.style.display = 'none';
+                        }
+                        
+                        tr.querySelector('.updated-cell').textContent = task.updated_at;
+                        tr.querySelector('.error-cell').textContent = task.error_message || "—";
+                    } else {
+                        // Reload if new tasks appeared
+                        location.reload();
+                    }
+                });
+            });
+    }, 3000);
+});
+</script>
+{% endblock %}
