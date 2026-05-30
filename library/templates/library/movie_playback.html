@@ -398,6 +398,7 @@ let settingsView = 'main';
 function buildSettingsMenu(hlsInstance) {
     settingsMenu.innerHTML = '';
     
+    if (settingsView === 'main') {
         let activeAudio = "Default Track";
         if (hlsInstance && hlsInstance.audioTracks && hlsInstance.audioTracks.length > 0) {
             const track = hlsInstance.audioTracks[hlsInstance.audioTrack !== -1 ? hlsInstance.audioTrack : 0];
