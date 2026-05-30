@@ -76,3 +76,8 @@ class Command(BaseCommand):
                             movie.save(update_fields=['is_converted', 'duration'])
                             ConversionTask.objects.filter(movie=movie).delete()
                             self.stdout.write(self.style.SUCCESS(f"Fixed flags and duration for {movie.title}"))
+                    else:
+                        self.stdout.write(self.style.ERROR(f"No .m3u8 file found in root of {d.name}"))
+                        self.stdout.write("Directory contents:")
+                        for child in d.iterdir():
+                            self.stdout.write(f"  - {child.name}")
