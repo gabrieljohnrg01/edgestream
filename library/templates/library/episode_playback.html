@@ -426,7 +426,12 @@ function buildSettingsMenu(hlsInstance) {
         
         let activeQual = "Auto";
         if (hlsInstance && hlsInstance.currentLevel !== -1 && hlsInstance.levels[hlsInstance.currentLevel]) {
-            activeQual = hlsInstance.levels[hlsInstance.currentLevel].height + 'p';
+            const currentHeight = hlsInstance.levels[hlsInstance.currentLevel].height + 'p';
+            if (hlsInstance.nextLevel === -1 || hlsInstance.autoLevelEnabled) {
+                activeQual = `Auto (${currentHeight})`;
+            } else {
+                activeQual = currentHeight;
+            }
         }
 
         settingsMenu.appendChild(createMainItem('Audio track', activeAudio, 'bi-music-note-beamed', () => { settingsView = 'audio'; buildSettingsMenu(hlsInstance); }));
