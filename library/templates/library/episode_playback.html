@@ -426,12 +426,14 @@ function buildSettingsMenu(hlsInstance) {
         
         let activeQual = "Auto";
         if (hlsInstance && hlsInstance.levels) {
-            if (hlsInstance.autoLevelEnabled) {
+            if (hlsInstance.autoLevelEnabled || hlsInstance.nextLevel === -1) {
                 if (hlsInstance.currentLevel !== -1 && hlsInstance.levels[hlsInstance.currentLevel]) {
                     activeQual = `Auto (${hlsInstance.levels[hlsInstance.currentLevel].height}p)`;
                 }
             } else {
-                if (hlsInstance.currentLevel !== -1 && hlsInstance.levels[hlsInstance.currentLevel]) {
+                if (hlsInstance.nextLevel !== -1 && hlsInstance.levels[hlsInstance.nextLevel]) {
+                    activeQual = hlsInstance.levels[hlsInstance.nextLevel].height + 'p';
+                } else if (hlsInstance.currentLevel !== -1 && hlsInstance.levels[hlsInstance.currentLevel]) {
                     activeQual = hlsInstance.levels[hlsInstance.currentLevel].height + 'p';
                 }
             }
@@ -454,14 +456,14 @@ function buildSettingsMenu(hlsInstance) {
         
         if (settingsView === 'quality') {
             if (hlsInstance && hlsInstance.levels) {
-                settingsMenu.appendChild(createOptionItem('Auto', hlsInstance.autoLevelEnabled, () => {
-                    hlsInstance.currentLevel = -1;
+                settingsMenu.appendChild(createOptionItem('Auto', hlsInstance.autoLevelEnabled || hlsInstance.nextLevel === -1, () => {
+                    hlsInstance.nextLevel = -1;
                     settingsView = 'main'; buildSettingsMenu(hlsInstance);
                 }));
                 const sortedLevels = hlsInstance.levels.map((l, i) => ({...l, index: i})).sort((a,b) => b.height - a.height);
                 sortedLevels.forEach(level => {
-                    settingsMenu.appendChild(createOptionItem(level.height + 'p', !hlsInstance.autoLevelEnabled && hlsInstance.currentLevel === level.index, () => {
-                        hlsInstance.currentLevel = level.index;
+                    settingsMenu.appendChild(createOptionItem(level.height + 'p', hlsInstance.nextLevel === level.index, () => {
+                        hlsInstance.nextLevel = level.index;
                         settingsView = 'main'; buildSettingsMenu(hlsInstance);
                     }));
                 });
