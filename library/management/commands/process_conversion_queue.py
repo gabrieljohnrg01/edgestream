@@ -37,6 +37,17 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        from django.utils import timezone
+        import datetime
+        
+        # Recover tasks stuck due to power outage/crashes
+        stuck_timeout = timezone.now() - datetime.timedelta(hours=2)
+        stuck_tasks = ConversionTask.objects.filter(status=ConversionTask.STATUS_PROCESSING, updated_at__lt=stuck_timeout)
+        stuck_count = stuck_tasks.count()
+        if stuck_count > 0:
+            self.stdout.write(self.style.WARNING(f"Found {stuck_count} stuck tasks. Resetting to QUEUED."))
+            stuck_tasks.update(status=ConversionTask.STATUS_QUEUED, progress=0, updated_at=timezone.now())
+
         limit = options["limit"]
         retry_failed = options["retry_failed"]
         ffmpeg = self._find_ffmpeg()
@@ -214,8 +225,10 @@ class Command(BaseCommand):
                 variant_progress = min(current_seconds / local_total_seconds, 1.0)
                 overall_progress = int(((current_step + variant_progress) / total_variants) * 100)
                 if overall_progress > task.progress:
+                    from django.utils import timezone
                     task.progress = min(overall_progress, 99)
-                    task.save(update_fields=["progress"])
+                    task.updated_at = timezone.now()
+                    task.save(update_fields=["progress", "updated_at"])
         
         process.wait()
         if process.returncode != 0:
