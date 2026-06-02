@@ -82,8 +82,7 @@ urlpatterns = [
     path("", include("library.urls")),
 ]
 
-if settings.DEBUG:
-    urlpatterns += [
-        path("media/<path:path>", serve_media, {"document_root": settings.MEDIA_ROOT}),
-        path("hls/<path:path>", serve_media, {"document_root": getattr(settings, 'HLS_ROOT', settings.MEDIA_ROOT / "hls")}),
-    ]
+urlpatterns += [
+    path("media/<path:path>", serve_media, {"document_root": settings.MEDIA_ROOT}),
+    path("hls/<path:path>", serve_media, {"document_root": getattr(settings, 'HLS_ROOT', settings.MEDIA_ROOT / "hls")}),
+]
