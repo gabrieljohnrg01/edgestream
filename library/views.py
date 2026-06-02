@@ -16,9 +16,26 @@ from django.utils.dateparse import parse_date
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.decorators import login_required
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
 from .models import Movie, Series, Season, Episode, MediaItem, ConversionTask, WatchlistItem, PlaybackProgress, Genre
 from .tmdb import TMDB_IMAGE_BASE, clean_title, extract_title_year, fetch_tmdb_metadata, parse_date
+
+def webview_login(request):
+    token = request.GET.get('token')
+    next_url = request.GET.get('next', '/')
+    if token:
+        try:
+            jwt_auth = JWTAuthentication()
+            validated_token = jwt_auth.get_validated_token(token)
+            user = jwt_auth.get_user(validated_token)
+            if user and user.is_active:
+                login(request, user)
+                return redirect(next_url)
+        except (InvalidToken, TokenError):
+            pass
+    return redirect('login')
 
 
 def get_sunday_midnight():

@@ -80,6 +80,7 @@ def serve_media(request, path, document_root=None):
 from rest_framework import routers
 from library.api import MovieViewSet, SeriesViewSet, SeasonViewSet, EpisodeViewSet, RegisterUserAPIView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+import library.views
 
 router = routers.DefaultRouter()
 router.register(r'movies', MovieViewSet, basename='movie')
@@ -92,6 +93,7 @@ urlpatterns = [
     path("api/token/", TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path("api/token/refresh/", TokenRefreshView.as_view(), name='token_refresh'),
     path("api/register/", RegisterUserAPIView.as_view(), name='register'),
+    path("api/webview-login/", library.views.webview_login, name='webview_login'),
     path("api/", include(router.urls)),
     path("", include("library.urls")),
 ]
