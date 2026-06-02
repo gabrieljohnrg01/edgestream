@@ -327,9 +327,9 @@ video::cue {
 {% block content %}
 <div class="fullscreen-playback">
     <div class="custom-player-container paused" id="player-container">
-        <div class="playback-overlay">
-            <a href="{% url 'series_detail' episode.season.series.pk %}" class="back-link"><i class="bi bi-arrow-left"></i> Back to Series</a>
-            <h2 style="color: white; margin-left: 20px; font-weight: 400; display: inline-block;">S{{ episode.season.season_number }}E{{ episode.episode_number }} - {{ episode.title }}</h2>
+        <div class="playback-overlay" style="display: flex; justify-content: space-between; align-items: center;">
+            <a href="{% url 'series_detail' episode.season.series.pk %}" class="back-link" style="flex-shrink: 0;"><i class="bi bi-arrow-left"></i> Back to Series</a>
+            <h2 style="color: white; margin: 0; font-weight: 400; font-size: 1.2rem; max-width: 60%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right;">S{{ episode.season.season_number }}E{{ episode.episode_number }} - {{ episode.title }}</h2>
         </div>
         
         <div class="loading-spinner" id="loading-spinner">
@@ -357,9 +357,19 @@ video::cue {
             </div>
             <div class="control-buttons">
                 <div class="control-buttons-left">
+                    {% if prev_episode %}
+                    <a href="{% url 'episode_playback' prev_episode.pk %}" class="player-btn" style="text-decoration: none;" title="Previous Episode">
+                        <i class="bi bi-skip-start-fill"></i>
+                    </a>
+                    {% endif %}
                     <button class="player-btn" id="play-btn" onclick="togglePlay()">
                         <i class="bi bi-play-fill"></i>
                     </button>
+                    {% if next_episode %}
+                    <a href="{% url 'episode_playback' next_episode.pk %}" class="player-btn" style="text-decoration: none;" title="Next Episode">
+                        <i class="bi bi-skip-end-fill"></i>
+                    </a>
+                    {% endif %}
                     <button class="player-btn" id="mute-btn" onclick="toggleMute()">
                         <i class="bi bi-volume-up-fill"></i>
                     </button>
