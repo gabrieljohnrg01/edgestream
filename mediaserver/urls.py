@@ -77,8 +77,21 @@ def serve_media(request, path, document_root=None):
     return response
 
 
+from rest_framework import routers
+from library.api import MovieViewSet, SeriesViewSet, SeasonViewSet, EpisodeViewSet
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
+router = routers.DefaultRouter()
+router.register(r'movies', MovieViewSet, basename='movie')
+router.register(r'series', SeriesViewSet, basename='series')
+router.register(r'seasons', SeasonViewSet, basename='season')
+router.register(r'episodes', EpisodeViewSet, basename='episode')
+
 urlpatterns = [
     path("cd8e67206a28a6444351.txt", lambda request: HttpResponse("3e22655f2b541b1ac9cb", content_type="text/plain")),
+    path("api/token/", TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path("api/token/refresh/", TokenRefreshView.as_view(), name='token_refresh'),
+    path("api/", include(router.urls)),
     path("", include("library.urls")),
 ]
 
