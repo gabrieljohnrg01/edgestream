@@ -1,6 +1,12 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, generics
+from rest_framework.permissions import AllowAny
 from .models import Movie, Series, Season, Episode
-from .serializers import MovieSerializer, SeriesSerializer, SeasonSerializer, EpisodeSerializer
+from .serializers import MovieSerializer, SeriesSerializer, SeasonSerializer, EpisodeSerializer, UserRegistrationSerializer
+
+class RegisterUserAPIView(generics.CreateAPIView):
+    serializer_class = UserRegistrationSerializer
+    permission_classes = [AllowAny]
+
 
 class MovieViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Movie.objects.filter(is_converted=True)
