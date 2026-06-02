@@ -105,7 +105,9 @@ def get_hls_playlist_path(file_path):
     hls_playlist_name = media_path.with_suffix("").name + ".m3u8"
     hls_file = hls_dir / hls_playlist_name
     if hls_file.exists():
-        return f"/hls/{(media_path.with_suffix("") / hls_playlist_name).as_posix()}"
+        import urllib.parse
+        raw_path = (media_path.with_suffix("") / hls_playlist_name).as_posix()
+        return f"/hls/{urllib.parse.quote(raw_path)}"
     return None
 
 MEDIA_ROOT = Path(os.environ.get("MEDIA_ROOT", str(settings.MEDIA_ROOT)))
@@ -292,8 +294,9 @@ def get_hls_subtitles(file_path):
             
             # Simple label parsing
             label = vtt.stem.replace("sub_", "").replace("ext_", "External ")
+            import urllib.parse
             subs.append({
-                "url": f"/media/{sub_rel}",
+                "url": f"/media/{urllib.parse.quote(sub_rel)}",
                 "label": label.title(),
                 "srclang": label[-3:] if len(label) >= 3 else "en"
             })
