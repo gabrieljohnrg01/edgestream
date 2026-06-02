@@ -3,18 +3,18 @@
 
 <!-- Featured Hero Section -->
 {% if featured_items %}
-<div class="hero-carousel" style="position: relative; margin-bottom: 40px; border-radius: 12px; overflow: hidden; height: 50vh; min-height: 400px;">
+<div class="hero-carousel" style="position: relative; margin-bottom: 40px; border-radius: 12px; overflow: hidden; height: 55vh; min-height: 480px;">
     {% for item in featured_items %}
     <div class="hero-slide {% if forloop.first %}active{% endif %}" data-index="{{ forloop.counter0 }}" style="position: absolute; inset: 0; opacity: {% if forloop.first %}1{% else %}0{% endif %}; transition: opacity 0.8s ease-in-out; display: flex; align-items: center; padding: 40px; pointer-events: {% if forloop.first %}auto{% else %}none{% endif %};">
         <div class="hero-bg" style="position: absolute; inset: 0; background-image: url('{{ item.backdrop_url|default:item.poster_url }}'); background-size: cover; background-position: center top;"></div>
         <div style="position: absolute; inset: 0; background: linear-gradient(to right, rgba(10, 10, 13, 0.95) 0%, rgba(10, 10, 13, 0.7) 40%, transparent 100%);"></div>
         <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(10, 10, 13, 1) 0%, transparent 30%);"></div>
         
-        <div class="hero-content" style="position: relative; z-index: 10; max-width: 600px;">
+        <div class="hero-content" style="position: relative; z-index: 10; max-width: 600px; flex-shrink: 0;">
             <div class="hero-type" style="color: var(--accent-crimson); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; font-size: 0.8rem;">
                 FEATURED TV SHOW
             </div>
-            <h1 style="font-size: 3.5rem; margin: 0 0 16px; line-height: 1.1; font-weight: 800; letter-spacing: 2px;">{{ item.title }}</h1>
+            <h1 style="font-size: clamp(2rem, 5vw, 3.5rem); margin: 0 0 16px; line-height: 1.1; font-weight: 800; letter-spacing: 2px;">{{ item.title }}</h1>
             {% if item.description %}
             <p style="font-size: 1rem; color: var(--text-muted-gray); margin-bottom: 30px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.6;">{{ item.description }}</p>
             {% endif %}
