@@ -246,6 +246,11 @@ body {
 .scroll-row {
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+}
+.scroll-row::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
 }
 
 .scroll-row > a,
