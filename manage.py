@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 import os
 import sys
+import socket
+
+# Monkeypatch socket.getfqdn to prevent slow reverse DNS lookups on local networks
+socket.getfqdn = lambda name="": name
 
 def main():
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mediaserver.settings")
