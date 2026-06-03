@@ -459,6 +459,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         hls.on(Hls.Events.ERROR, function (event, data) {
             if (data.fatal) {
+                alert("Playback Error: " + data.details);
                 switch (data.type) {
                     case Hls.ErrorTypes.NETWORK_ERROR:
                         hls.startLoad();
