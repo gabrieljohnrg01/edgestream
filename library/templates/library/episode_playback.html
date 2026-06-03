@@ -458,14 +458,7 @@ function toggleAspect() {
 document.addEventListener('DOMContentLoaded', () => {
     const source = '{% if hls_playlist %}{{ hls_playlist }}{% else %}{{ fallback_file|default:"" }}{% endif %}';
     
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    
-    if (isMobile && source.indexOf('.m3u8') !== -1) {
-        video.src = source;
-        video.addEventListener('loadedmetadata', function() {
-            video.play().catch(e => console.log("Autoplay blocked:", e));
-        });
-    } else if (source.indexOf('.m3u8') !== -1 && Hls.isSupported()) {
+    if (source.indexOf('.m3u8') !== -1 && Hls.isSupported()) {
         hls = new Hls();
         hls.loadSource(source);
         hls.attachMedia(video);
