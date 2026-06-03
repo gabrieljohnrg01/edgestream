@@ -1,0 +1,75 @@
+import os
+import subprocess
+from pathlib import Path
+
+# The base directory where the series is stored
+hls_root = Path("media/hls/series/Georgie & Mandy's First Marriage/Season 1")
+
+# The variants that contain video
+variants = ["1080p", "720p", "480p", "144p"]
+
+def main():
+    if not hls_root.exists():
+        print(f"Error: Could not find {hls_root}")
+        return
+
+    print("Starting 10-bit to 8-bit In-Place Conversion...")
+    
+    for episode_dir in sorted(hls_root.iterdir()):
+        if not episode_dir.is_dir():
+            continue
+            
+        print(f"\n========================================")
+        print(f"Processing: {episode_dir.name}")
+        
+        for var in variants:
+            var_dir = episode_dir / var
+            if not var_dir.exists():
+                continue
+            
+            m3u8_files = list(var_dir.glob("*.m3u8"))
+            if not m3u8_files:
+                continue
+            m3u8_file = m3u8_files[0]
+            
+            print(f"  -> Fixing variant: {var} ...")
+            tmp_m3u8 = var_dir / "tmp.m3u8"
+            seg_pattern = str(var_dir / f"{m3u8_file.stem}_fix_%03d.ts")
+            
+            # Re-encode to 8-bit H.264
+            args = [
+                "ffmpeg", "-y", "-i", str(m3u8_file),
+                "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "ultrafast",
+                "-an", # audio is already separated in EdgeStream
+                "-f", "hls", "-hls_time", "4", "-hls_list_size", "0",
+                "-hls_segment_filename", seg_pattern, str(tmp_m3u8)
+            ]
+            
+            result = subprocess.run(args, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+            if result.returncode != 0:
+                print(f"     [ERROR] FFmpeg failed for {var}. Skipping.")
+                if tmp_m3u8.exists(): tmp_m3u8.unlink()
+                continue
+                
+            # Cleanup old 10-bit .ts files
+            for old_ts in var_dir.glob(f"{m3u8_file.stem}_[0-9][0-9][0-9].ts"):
+                old_ts.unlink()
+                
+            # Rename new 8-bit .ts files back to original names
+            for new_ts in var_dir.glob(f"{m3u8_file.stem}_fix_*.ts"):
+                final_name = new_ts.name.replace("_fix", "")
+                new_ts.rename(var_dir / final_name)
+                
+            # Replace old m3u8 with the new fixed one
+            m3u8_file.unlink()
+            tmp_m3u8.rename(m3u8_file)
+            
+            # Clean up the internal segment names in the m3u8 file
+            content = m3u8_file.read_text(encoding='utf-8')
+            content = content.replace("_fix", "")
+            m3u8_file.write_text(content, encoding='utf-8')
+            
+            print(f"     [OK] {var} successfully downgraded to 8-bit H.264.")
+
+if __name__ == "__main__":
+    main()
