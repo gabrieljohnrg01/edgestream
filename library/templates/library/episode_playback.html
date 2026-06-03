@@ -131,8 +131,9 @@ video::cue {
     pointer-events: none;
 }
 
-.custom-player-container.idle:not(.paused) {
-    cursor: none;
+.custom-player-container.idle:not(.paused),
+.custom-player-container.idle:not(.paused) * {
+    cursor: none !important;
 }
 
 .progress-bar-container {
@@ -146,6 +147,25 @@ video::cue {
 .progress-bar-container:hover {
     height: 8px;
 }
+    .progress-bar-container:not(.dragging) .progress-bar-filled {
+        transition: width 0.1s linear;
+    }
+    .progress-bar-thumb {
+        position: absolute;
+        right: -6px;
+        top: 50%;
+        transform: translateY(-50%) scale(0);
+        width: 12px;
+        height: 12px;
+        background: #ff0000;
+        border-radius: 50%;
+        transition: transform 0.2s ease;
+        pointer-events: none;
+    }
+    .progress-bar-container:hover .progress-bar-thumb,
+    .progress-bar-container.dragging .progress-bar-thumb {
+        transform: translateY(-50%) scale(1);
+    }
 .progress-bar-filled {
     height: 100%;
     background: #e50914; /* Netflix Red */
@@ -381,8 +401,10 @@ video::cue {
         </video>
         
         <div class="player-controls">
-            <div class="progress-bar-container" id="progress-container" onclick="seek(event)">
-                <div class="progress-bar-filled" id="progress-filled"></div>
+            <div class="progress-bar-container" id="progress-container">
+                <div class="progress-bar-filled" id="progress-filled">
+                    <div class="progress-bar-thumb"></div>
+                </div>
             </div>
             <div class="control-buttons">
                 <div class="control-buttons-left">
@@ -677,6 +699,7 @@ function toggleMute() {
 {% if user.is_authenticated %}
 let lastSyncTime = 0;
 video.addEventListener('timeupdate', () => {
+    if (isDragging) return;
     const activeDuration = (isFinite(video.duration) && video.duration > 0) ? video.duration : backendDuration;
     const percent = activeDuration > 0 ? (video.currentTime / activeDuration) * 100 : 0;
     progressFilled.style.width = `${percent}%`;
@@ -704,6 +727,7 @@ video.addEventListener('timeupdate', () => {
 });
 {% else %}
 video.addEventListener('timeupdate', () => {
+    if (isDragging) return;
     const activeDuration = (isFinite(video.duration) && video.duration > 0) ? video.duration : backendDuration;
     const percent = activeDuration > 0 ? (video.currentTime / activeDuration) * 100 : 0;
     progressFilled.style.width = `${percent}%`;
@@ -724,24 +748,72 @@ video.addEventListener('loadedmetadata', () => {
 });
 
 let isDragging = false;
+let wasPlayingBeforeDrag = false;
 
-function seek(e) {
-    const activeDuration = (isFinite(video.duration) && video.duration > 0) ? video.duration : backendDuration;
+function updateProgressUI(e) {
     const rect = progressContainer.getBoundingClientRect();
-    let pos = (e.clientX - rect.left) / rect.width;
-    pos = Math.max(0, Math.min(1, pos));
-    video.currentTime = pos * activeDuration;
+    let clientX = e.clientX;
+    if (e.touches && e.touches.length > 0) clientX = e.touches[0].clientX;
+    else if (e.changedTouches && e.changedTouches.length > 0) clientX = e.changedTouches[0].clientX;
+    
+    let posPercent = (clientX - rect.left) / rect.width;
+    posPercent = Math.max(0, Math.min(1, posPercent));
+    
+    progressFilled.style.width = `${posPercent * 100}%`;
+    
+    const activeDuration = (isFinite(video.duration) && video.duration > 0) ? video.duration : backendDuration;
+    currentTimeDisplay.innerText = formatTime(posPercent * activeDuration);
+    return posPercent;
 }
 
-progressContainer.addEventListener('mousedown', (e) => { isDragging = true; seek(e); });
-document.addEventListener('mousemove', (e) => { if(isDragging) seek(e); });
-document.addEventListener('mouseup', () => { isDragging = false; });
+progressContainer.addEventListener('mousedown', (e) => { 
+    isDragging = true; 
+    progressContainer.classList.add('dragging');
+    wasPlayingBeforeDrag = !video.paused;
+    if (wasPlayingBeforeDrag) video.pause();
+    updateProgressUI(e);
+});
 
-progressContainer.addEventListener('touchstart', (e) => { isDragging = true; seek(e.touches[0]); });
+document.addEventListener('mousemove', (e) => { 
+    if(isDragging) updateProgressUI(e);
+});
+
+document.addEventListener('mouseup', (e) => { 
+    if(isDragging) {
+        isDragging = false; 
+        progressContainer.classList.remove('dragging');
+        const posPercent = updateProgressUI(e);
+        const activeDuration = (isFinite(video.duration) && video.duration > 0) ? video.duration : backendDuration;
+        video.currentTime = posPercent * activeDuration;
+        if (wasPlayingBeforeDrag) video.play().catch(err => console.log(err));
+    }
+});
+
+progressContainer.addEventListener('touchstart', (e) => { 
+    isDragging = true; 
+    progressContainer.classList.add('dragging');
+    wasPlayingBeforeDrag = !video.paused;
+    if (wasPlayingBeforeDrag) video.pause();
+    updateProgressUI(e);
+});
+
 progressContainer.addEventListener('touchmove', (e) => { 
-    if(isDragging) { e.preventDefault(); seek(e.touches[0]); }
+    if(isDragging) { 
+        e.preventDefault(); 
+        updateProgressUI(e);
+    }
 }, {passive: false});
-progressContainer.addEventListener('touchend', () => { isDragging = false; });
+
+progressContainer.addEventListener('touchend', (e) => { 
+    if(isDragging) {
+        isDragging = false; 
+        progressContainer.classList.remove('dragging');
+        const posPercent = updateProgressUI(e);
+        const activeDuration = (isFinite(video.duration) && video.duration > 0) ? video.duration : backendDuration;
+        video.currentTime = posPercent * activeDuration;
+        if (wasPlayingBeforeDrag) video.play().catch(err => console.log(err));
+    }
+});
 
 function formatTime(seconds) {
     if(isNaN(seconds)) return "0:00";
@@ -843,5 +915,56 @@ video.addEventListener('play', resetIdleTimer);
 
 // Initial trigger
 resetIdleTimer();
+
+// Gamepad API Support
+let gamepadState = {};
+function pollGamepads() {
+    const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+    for (let i = 0; i < gamepads.length; i++) {
+        const gp = gamepads[i];
+        if (gp) {
+            // Button 0 (A/Cross): Play/Pause
+            if (gp.buttons[0].pressed && !gamepadState.btn0) {
+                togglePlay();
+                resetIdleTimer();
+            }
+            gamepadState.btn0 = gp.buttons[0].pressed;
+
+            // Button 1 (B/Circle): Fullscreen
+            if (gp.buttons[1].pressed && !gamepadState.btn1) {
+                toggleFullscreen();
+                resetIdleTimer();
+            }
+            gamepadState.btn1 = gp.buttons[1].pressed;
+
+            // Button 2 (X/Square): Mute
+            if (gp.buttons[2].pressed && !gamepadState.btn2) {
+                toggleMute();
+                resetIdleTimer();
+            }
+            gamepadState.btn2 = gp.buttons[2].pressed;
+
+            // Button 14 (D-pad Left): Rewind 10s
+            if (gp.buttons[14] && gp.buttons[14].pressed && !gamepadState.btn14) {
+                video.currentTime = Math.max(video.currentTime - 10, 0);
+                resetIdleTimer();
+            }
+            if (gp.buttons[14]) gamepadState.btn14 = gp.buttons[14].pressed;
+
+            // Button 15 (D-pad Right): Forward 10s
+            if (gp.buttons[15] && gp.buttons[15].pressed && !gamepadState.btn15) {
+                video.currentTime = Math.min(video.currentTime + 10, video.duration || backendDuration);
+                resetIdleTimer();
+            }
+            if (gp.buttons[15]) gamepadState.btn15 = gp.buttons[15].pressed;
+        }
+    }
+    requestAnimationFrame(pollGamepads);
+}
+
+window.addEventListener("gamepadconnected", (e) => {
+    console.log("Gamepad connected: " + e.gamepad.id);
+    pollGamepads();
+});
 </script>
 {% endblock %}
