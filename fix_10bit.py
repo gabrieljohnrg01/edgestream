@@ -54,6 +54,7 @@ def main():
                 # Re-encode to 8-bit H.264
                 args = [
                     "ffmpeg", "-y", "-i", str(m3u8_file),
+                    "-map", "0:v", # explicitly target the video stream
                     "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "ultrafast",
                     "-an", "-sn", # audio and subtitles are handled separately
                     "-f", "hls", "-hls_time", "4", "-hls_list_size", "0",
