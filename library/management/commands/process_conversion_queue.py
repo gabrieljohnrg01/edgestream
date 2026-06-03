@@ -151,6 +151,8 @@ class Command(BaseCommand):
         current_step = 0
 
         # 3. Process video variants
+        use_qsv = True
+        
         for label, size, bandwidth in VARIANTS:
             variant_dir = variant_root / label
             variant_dir.mkdir(parents=True, exist_ok=True)
@@ -162,21 +164,38 @@ class Command(BaseCommand):
                 f"pad=ceil(iw/2)*2:ceil(ih/2)*2"
             )
 
-            args = [
-                ffmpeg, "-y", "-i", str(infile),
-                "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "ultrafast", "-vf", filter_expr,
-            ]
-            if audio_streams:
-                args.extend(["-an"]) # No audio in video variants
-            else:
-                args.extend(["-c:a", "aac", "-b:a", "128k", "-ac", "2"])
+            def build_args(encoder="h264_qsv"):
+                # QSV hardware encoders expect nv12, software expects yuv420p
+                pix_fmt = "nv12" if encoder == "h264_qsv" else "yuv420p"
+                preset = "fast" if encoder == "h264_qsv" else "ultrafast"
                 
-            args.extend([
-                "-f", "hls", "-hls_time", "4", "-hls_list_size", "0",
-                "-hls_segment_filename", seg_template, str(variant_playlist)
-            ])
+                args = [
+                    ffmpeg, "-y", "-i", str(infile),
+                    "-c:v", encoder, "-pix_fmt", pix_fmt, "-preset", preset, "-vf", filter_expr,
+                ]
+                if audio_streams:
+                    args.extend(["-an"]) # No audio in video variants
+                else:
+                    args.extend(["-c:a", "aac", "-b:a", "128k", "-ac", "2"])
+                    
+                args.extend([
+                    "-f", "hls", "-hls_time", "4", "-hls_list_size", "0",
+                    "-hls_segment_filename", seg_template, str(variant_playlist)
+                ])
+                return args
 
-            self._run_ffmpeg_progress(args, current_step, total_variants, total_seconds, task, label)
+            # Attempt QSV Hardware Acceleration First
+            if use_qsv:
+                try:
+                    self._run_ffmpeg_progress(build_args("h264_qsv"), current_step, total_variants, total_seconds, task, f"{label} (QSV)")
+                except RuntimeError:
+                    self.stdout.write(self.style.WARNING(f"\n[Hardware Alert] Intel QSV failed for {label}. Falling back to standard libx264 software encoding..."))
+                    use_qsv = False # Disable QSV for the rest of this conversion
+            
+            # Fallback to Software Encoding
+            if not use_qsv:
+                self._run_ffmpeg_progress(build_args("libx264"), current_step, total_variants, total_seconds, task, f"{label} (libx264)")
+                
             current_step += 1
 
         # 4. Process audio variants
