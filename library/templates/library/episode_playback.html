@@ -723,12 +723,25 @@ video.addEventListener('loadedmetadata', () => {
     }
 });
 
+let isDragging = false;
+
 function seek(e) {
     const activeDuration = (isFinite(video.duration) && video.duration > 0) ? video.duration : backendDuration;
     const rect = progressContainer.getBoundingClientRect();
-    const pos = (e.clientX - rect.left) / rect.width;
+    let pos = (e.clientX - rect.left) / rect.width;
+    pos = Math.max(0, Math.min(1, pos));
     video.currentTime = pos * activeDuration;
 }
+
+progressContainer.addEventListener('mousedown', (e) => { isDragging = true; seek(e); });
+document.addEventListener('mousemove', (e) => { if(isDragging) seek(e); });
+document.addEventListener('mouseup', () => { isDragging = false; });
+
+progressContainer.addEventListener('touchstart', (e) => { isDragging = true; seek(e.touches[0]); });
+progressContainer.addEventListener('touchmove', (e) => { 
+    if(isDragging) { e.preventDefault(); seek(e.touches[0]); }
+}, {passive: false});
+progressContainer.addEventListener('touchend', () => { isDragging = false; });
 
 function formatTime(seconds) {
     if(isNaN(seconds)) return "0:00";
