@@ -31,14 +31,10 @@ def main():
                 if not var_dir.exists():
                     continue
                 
-                m3u8_files = [f for f in var_dir.glob("*.m3u8") if f.name != "tmp.m3u8"]
-                if not m3u8_files:
+                # Find the exact video playlist (avoid _vtt.m3u8 subtitle playlists)
+                m3u8_file = var_dir / f"{episode_dir.name}.m3u8"
+                if not m3u8_file.exists():
                     continue
-                m3u8_file = m3u8_files[0]
-                
-                print(f"  -> Using playlist: {m3u8_file.name}")
-                with open(m3u8_file, "r") as f:
-                    print(f"  -> Playlist preview: {f.read(150)!r}")
                 
                 # Check if already 8-bit
                 ts_files = list(var_dir.glob("*.ts"))
