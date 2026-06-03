@@ -442,6 +442,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
             buildSettingsMenu(hls);
+            video.play().catch(e => console.log("Autoplay blocked:", e));
         });
         
         hls.on(Hls.Events.ERROR, function (event, data) {
@@ -461,6 +462,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     } else if (source.indexOf('.m3u8') !== -1) {
         video.src = source;
+        video.play().catch(e => console.log("Autoplay blocked:", e));
     }
 });
 
