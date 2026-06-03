@@ -55,7 +55,7 @@ def main():
                 args = [
                     "ffmpeg", "-y", "-i", str(m3u8_file),
                     "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "ultrafast",
-                    "-an", # audio is already separated in EdgeStream
+                    "-an", "-sn", # audio and subtitles are handled separately
                     "-f", "hls", "-hls_time", "4", "-hls_list_size", "0",
                     "-hls_segment_filename", seg_pattern, str(tmp_m3u8)
                 ]
