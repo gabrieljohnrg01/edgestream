@@ -36,6 +36,17 @@ def main():
                 continue
             m3u8_file = m3u8_files[0]
             
+            # Check if already 8-bit
+            ts_files = list(var_dir.glob("*.ts"))
+            if ts_files:
+                probe = subprocess.run(
+                    ["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=pix_fmt", "-of", "default=noprint_wrappers=1:nokey=1", str(ts_files[0])],
+                    capture_output=True, text=True
+                )
+                if "10" not in probe.stdout:
+                    print(f"  -> {var} is already 8-bit. Skipping.")
+                    continue
+            
             print(f"  -> Fixing variant: {var} ...")
             tmp_m3u8 = var_dir / "tmp.m3u8"
             seg_pattern = str(var_dir / f"{m3u8_file.stem}_fix_%03d.ts")
