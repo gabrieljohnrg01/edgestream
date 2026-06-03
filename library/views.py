@@ -263,6 +263,47 @@ def series(request):
     return render(request, "library/series.html", context)
 
 
+def get_resume_episode(user, series_obj):
+    if not user.is_authenticated:
+        first_season = series_obj.seasons.filter(episodes__is_converted=True).order_by('season_number').first()
+        if first_season:
+            return first_season.episodes.filter(is_converted=True).order_by('episode_number').first()
+        return None
+        
+    last_progress = PlaybackProgress.objects.filter(
+        user=user, 
+        episode__season__series=series_obj
+    ).select_related('episode', 'episode__season').order_by('-last_watched').first()
+    
+    if not last_progress:
+        first_season = series_obj.seasons.filter(episodes__is_converted=True).order_by('season_number').first()
+        if first_season:
+            return first_season.episodes.filter(is_converted=True).order_by('episode_number').first()
+        return None
+        
+    if not last_progress.is_finished:
+        return last_progress.episode
+        
+    current_ep = last_progress.episode
+    next_ep = Episode.objects.filter(
+        season=current_ep.season, 
+        is_converted=True,
+        episode_number__gt=current_ep.episode_number
+    ).order_by('episode_number').first()
+    
+    if next_ep:
+        return next_ep
+        
+    next_season = Season.objects.filter(
+        series=series_obj,
+        season_number__gt=current_ep.season.season_number
+    ).order_by('season_number').first()
+    
+    if next_season:
+        return next_season.episodes.filter(is_converted=True).order_by('episode_number').first()
+        
+    return current_ep
+
 def series_detail(request, pk):
     from django.db.models import Prefetch
     series_obj = get_object_or_404(get_converted_series_queryset(), pk=pk)
@@ -272,10 +313,14 @@ def series_detail(request, pk):
     in_watchlist = False
     if request.user.is_authenticated:
         in_watchlist = WatchlistItem.objects.filter(user=request.user, series=series_obj).exists()
+        
+    resume_episode = get_resume_episode(request.user, series_obj)
+    
     return render(request, "library/series_detail.html", {
         "series": series_obj,
         "seasons": seasons,
         "in_watchlist": in_watchlist,
+        "resume_episode": resume_episode,
     })
 
 

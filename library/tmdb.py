@@ -180,3 +180,35 @@ def fetch_episode_details(tmdb_id, season_num, episode_num):
     except Exception:
         return None
 
+
+def download_tmdb_image(url, subfolder="posters"):
+    if not url:
+        return ""
+    if url.startswith("/media/"):
+        return url
+        
+    import os
+    import urllib.request
+    from urllib.parse import urlparse
+    from django.conf import settings
+    
+    media_root = os.environ.get("MEDIA_ROOT", str(settings.MEDIA_ROOT))
+    folder_path = os.path.join(media_root, subfolder)
+    os.makedirs(folder_path, exist_ok=True)
+    
+    parsed = urlparse(url)
+    filename = os.path.basename(parsed.path)
+    if not filename:
+        return ""
+        
+    file_path = os.path.join(folder_path, filename)
+    
+    if os.path.exists(file_path):
+        return f"/media/{subfolder}/{filename}"
+        
+    try:
+        urllib.request.urlretrieve(url, file_path)
+        return f"/media/{subfolder}/{filename}"
+    except Exception as e:
+        print(f"Error downloading image {url}: {e}")
+        return url

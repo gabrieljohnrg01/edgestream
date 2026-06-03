@@ -12,6 +12,7 @@ from library.tmdb import (
     clean_title,
     extract_title_year,
     fetch_tmdb_metadata,
+    download_tmdb_image,
     fetch_season_details,
     fetch_episode_details,
     parse_date,
@@ -110,9 +111,9 @@ class Command(BaseCommand):
                     continue
 
                 poster_path = metadata.get("poster_path") or ""
-                poster_url = f"{TMDB_IMAGE_BASE}{poster_path}" if poster_path else ""
+                poster_url = download_tmdb_image(f"{TMDB_IMAGE_BASE}{poster_path}", "posters") if poster_path else ""
                 backdrop_path = metadata.get("backdrop_path") or ""
-                backdrop_url = f"{TMDB_IMAGE_BASE}{backdrop_path}" if backdrop_path else ""
+                backdrop_url = download_tmdb_image(f"{TMDB_IMAGE_BASE}{backdrop_path}", "backdrops") if backdrop_path else ""
                 description = metadata.get("overview", "")
                 release_date = parse_date(metadata.get("release_date"))
                 tmdb_id = metadata.get("id") or 0
@@ -189,8 +190,8 @@ class Command(BaseCommand):
                     defaults={
                         "tmdb_id": tmdb_id,
                         "description": metadata.get("overview", ""),
-                        "poster_url": f"{TMDB_IMAGE_BASE}{metadata.get('poster_path')}" if metadata.get("poster_path") else "",
-                        "backdrop_url": f"{TMDB_IMAGE_BASE}{metadata.get('backdrop_path')}" if metadata.get("backdrop_path") else "",
+                        "poster_url": download_tmdb_image(f"{TMDB_IMAGE_BASE}{metadata.get('poster_path')}", "posters") if metadata.get("poster_path") else "",
+                        "backdrop_url": download_tmdb_image(f"{TMDB_IMAGE_BASE}{metadata.get('backdrop_path')}", "backdrops") if metadata.get("backdrop_path") else "",
                         "release_date": parse_date(metadata.get("first_air_date")),
                     },
                 )
@@ -212,7 +213,7 @@ class Command(BaseCommand):
                 season_details = fetch_season_details(tmdb_id, season_num)
                 season_poster = ""
                 if season_details and season_details.get("poster_path"):
-                    season_poster = f"{TMDB_IMAGE_BASE}{season_details.get('poster_path')}"
+                    season_poster = download_tmdb_image(f"{TMDB_IMAGE_BASE}{season_details.get('poster_path')}", "posters")
 
                 season, _ = Season.objects.update_or_create(
                     series=series,
@@ -230,7 +231,7 @@ class Command(BaseCommand):
                 ep_description = episode_details.get("overview", "") if episode_details else ""
                 ep_still = ""
                 if episode_details and episode_details.get("still_path"):
-                    ep_still = f"{TMDB_IMAGE_BASE}{episode_details.get('still_path')}"
+                    ep_still = download_tmdb_image(f"{TMDB_IMAGE_BASE}{episode_details.get('still_path')}", "stills")
 
                 episode, created = Episode.objects.update_or_create(
                     season=season,

@@ -54,10 +54,19 @@ class SeasonSerializer(serializers.ModelSerializer):
 class SeriesSerializer(serializers.ModelSerializer):
     seasons = SeasonSerializer(many=True, read_only=True)
     genre_names = serializers.StringRelatedField(many=True, source='genres', read_only=True)
+    resume_episode_id = serializers.SerializerMethodField()
 
     class Meta:
         model = Series
         fields = '__all__'
+
+    def get_resume_episode_id(self, obj):
+        request = self.context.get('request')
+        user = request.user if request and hasattr(request, 'user') else None
+        
+        from library.views import get_resume_episode
+        resume_ep = get_resume_episode(user, obj)
+        return resume_ep.id if resume_ep else None
 
 class WatchlistItemSerializer(serializers.ModelSerializer):
     movie = MovieSerializer(read_only=True)

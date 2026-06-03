@@ -61,8 +61,13 @@
             </div>
             
             <div class="detail-actions" style="display: flex; gap: 16px; align-items: center;">
-                <a href="{% if series.seasons.first and series.seasons.first.episodes.first %}{% url 'episode_playback' series.seasons.first.episodes.first.pk %}{% else %}#{% endif %}" class="btn-primary" style="background: var(--accent-crimson); color: white; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 10px; transition: background 0.2s; font-size: 1.1rem; border: none; cursor: pointer; {% if not series.seasons.first or not series.seasons.first.episodes.first %}opacity: 0.5; pointer-events: none;{% endif %}">
-                    <i class="bi bi-play-fill" style="font-size: 1.4rem;"></i> Play S1 E1
+                <a href="{% if resume_episode %}{% url 'episode_playback' resume_episode.pk %}{% else %}#{% endif %}" class="btn-primary" style="background: var(--accent-crimson); color: white; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 10px; transition: background 0.2s; font-size: 1.1rem; border: none; cursor: pointer; {% if not resume_episode %}opacity: 0.5; pointer-events: none;{% endif %}">
+                    <i class="bi bi-play-fill" style="font-size: 1.4rem;"></i> 
+                    {% if resume_episode %}
+                        Play S{{ resume_episode.season.season_number }} E{{ resume_episode.episode_number }}
+                    {% else %}
+                        No Episodes
+                    {% endif %}
                 </a>
                 {% if user.is_authenticated %}
                 <button onclick="toggleWatchlist('series', {{ series.pk }})" class="btn-secondary" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); color: white; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 10px; transition: all 0.2s; font-size: 1.1rem; cursor: pointer; backdrop-filter: blur(10px);" id="watchlist-btn" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
