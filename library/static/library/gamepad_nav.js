@@ -26,7 +26,9 @@ function navigate(direction) {
     let current = document.activeElement;
     if (!elements.includes(current)) {
         // If nothing is focused, focus the first element (usually top-left)
-        elements[0].focus();
+        document.querySelectorAll('.gamepad-focus').forEach(el => el.classList.remove('gamepad-focus'));
+        elements[0].classList.add('gamepad-focus');
+        elements[0].focus({ preventScroll: true });
         lastNavTime = now;
         return;
     }
@@ -71,7 +73,9 @@ function navigate(direction) {
     });
 
     if (bestMatch) {
-        bestMatch.focus();
+        document.querySelectorAll('.gamepad-focus').forEach(el => el.classList.remove('gamepad-focus'));
+        bestMatch.classList.add('gamepad-focus');
+        bestMatch.focus({ preventScroll: true });
         // Ensure it's scrolled into view nicely
         bestMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
         lastNavTime = now;

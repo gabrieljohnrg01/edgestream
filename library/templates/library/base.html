@@ -137,10 +137,14 @@
     </script>
     <style>
         /* Highlight focused elements for gamepad navigation */
-        :focus {
+        .gamepad-focus, :focus-visible {
             outline: 3px solid var(--accent-crimson, #e50914) !important;
             outline-offset: 2px;
             border-radius: 4px;
+        }
+        /* Hide default focus ring on mouse click */
+        :focus:not(:focus-visible) {
+            outline: none !important;
         }
     </style>
     <script src="/static/library/gamepad_nav.js"></script>
