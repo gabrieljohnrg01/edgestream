@@ -746,6 +746,28 @@ function toggleSettings(e) {
     settingsMenu.classList.toggle('active');
 }
 
+document.addEventListener('keydown', (e) => {
+    if (e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'textarea') return;
+    switch(e.code) {
+        case 'Space':
+            e.preventDefault();
+            togglePlay();
+            break;
+        case 'ArrowRight':
+            e.preventDefault();
+            video.currentTime = Math.min(video.currentTime + 10, video.duration || backendDuration);
+            break;
+        case 'ArrowLeft':
+            e.preventDefault();
+            video.currentTime = Math.max(video.currentTime - 10, 0);
+            break;
+        case 'KeyF':
+            e.preventDefault();
+            toggleFullscreen();
+            break;
+    }
+});
+
 document.addEventListener('click', (e) => {
     if (!settingsMenu.contains(e.target) && e.target.id !== 'settings-btn' && e.target.closest('#settings-btn') === null) {
         settingsMenu.classList.remove('active');
