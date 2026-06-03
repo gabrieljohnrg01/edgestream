@@ -41,7 +41,7 @@ body.playback-page {
     max-width: none !important;
     max-height: none !important;
     border-radius: 0 !important;
-    object-fit: cover;
+    object-fit: contain;
     outline: none;
     cursor: pointer;
 }
@@ -338,7 +338,7 @@ video::cue {
             <div class="bar"></div>
             <div class="bar"></div>
         </div>
-        <video id="video-player" playsinline poster="{{ movie.poster_url }}" onclick="togglePlay()">
+        <video id="video-player" playsinline autoplay poster="{{ movie.poster_url }}" onclick="togglePlay()">
             {% if fallback_file and not hls_playlist %}
             <source src="{{ fallback_file }}" type="{{ fallback_type }}">
             {% endif %}
