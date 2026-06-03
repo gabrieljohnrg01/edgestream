@@ -78,7 +78,7 @@ def serve_media(request, path, document_root=None):
 
 
 from rest_framework import routers
-from library.api import MovieViewSet, SeriesViewSet, SeasonViewSet, EpisodeViewSet, RegisterUserAPIView
+from library.api import MovieViewSet, SeriesViewSet, SeasonViewSet, EpisodeViewSet, RegisterUserAPIView, WatchlistViewSet, ChangePasswordView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 import library.views
 
@@ -87,12 +87,14 @@ router.register(r'movies', MovieViewSet, basename='movie')
 router.register(r'series', SeriesViewSet, basename='series')
 router.register(r'seasons', SeasonViewSet, basename='season')
 router.register(r'episodes', EpisodeViewSet, basename='episode')
+router.register(r'watchlist', WatchlistViewSet, basename='watchlist')
 
 urlpatterns = [
     path("cd8e67206a28a6444351.txt", lambda request: HttpResponse("3e22655f2b541b1ac9cb", content_type="text/plain")),
     path("api/token/", TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path("api/token/refresh/", TokenRefreshView.as_view(), name='token_refresh'),
     path("api/register/", RegisterUserAPIView.as_view(), name='register'),
+    path("api/change-password/", ChangePasswordView.as_view(), name='change_password'),
     path("api/webview-login/", library.views.webview_login, name='webview_login'),
     path("api/", include(router.urls)),
     path("", include("library.urls")),

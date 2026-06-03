@@ -1,154 +1,106 @@
-# EdgeStream Deployment Guide (Multi-Project Server)
+# EdgeStream Deployment Guide
 
-Since you are hosting EdgeStream on a Debian server *alongside another project*, we need to ensure they don't clash. We will achieve this by giving EdgeStream its own dedicated internal port (e.g., `8001`) and using NGINX's `server_name` directive to route traffic correctly based on the subdomain requested by your Cloudflare Tunnel.
-
-## Architectural Overview
-1. **Cloudflare Tunnel**: You configure your tunnel so that your EdgeStream domain (e.g., `stream.yourdomain.com`) routes to `http://localhost:80`.
-2. **NGINX**: Listens on port 80. When it sees traffic specifically for `stream.yourdomain.com`, it intercepts the media files directly, and passes the web traffic to Gunicorn on port `8001`.
-3. **Gunicorn**: Runs EdgeStream entirely on port `8001` to avoid conflicting with your other project (which might be using `8000`).
+This guide covers deploying the entire EdgeStream ecosystem, including the Django backend media server and compiling the React Native mobile app for Android/iOS.
 
 ---
 
-## Step 1: Set Up the Project
+## Part 1: Backend Deployment (Django + Gunicorn + Nginx)
 
-Assuming your code is in `/home/gab/edgestream`:
+For production, you should not use the built-in `python manage.py runserver` command. Instead, you should use Gunicorn as the application server and Nginx as a reverse proxy to serve static media files efficiently.
+
+### 1. Configure Production Settings
+Ensure your environment variables are set correctly for production. You can use a `.env` file in the root of the project.
+- `DJANGO_DEBUG=False`
+- `DJANGO_SECRET_KEY='your-super-secret-key'`
+- `DJANGO_SECURE_SSL_REDIRECT=True` (If using HTTPS)
+
+### 2. Install Gunicorn
+Install Gunicorn into your Python environment:
 ```bash
-cd /home/gab/edgestream
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+pip install gunicorn
 ```
 
-**Configure `.env`**:
+### 3. Run with Gunicorn
+Run the Django app using Gunicorn on port 8000:
 ```bash
-cp .env.example .env
-nano .env
+gunicorn --workers 3 --bind 0.0.0.0:8000 mediaserver.wsgi:application
 ```
-- `DJANGO_SECRET_KEY`: Set to a secure random string.
-- `DJANGO_DEBUG`: Set to `False`.
-- `DJANGO_ALLOWED_HOSTS`: Set to your specific Cloudflare domain (e.g., `stream.yourdomain.com`).
+*Note: Run this inside a daemon or service manager like `systemd` or `supervisor` to keep it running in the background.*
 
-**Prepare Database and Static Files**:
-```bash
-python manage.py migrate
-python manage.py collectstatic --noinput
-```
-
----
-
-## Step 2: Configure NGINX for Coexistence
-
-Create a dedicated NGINX configuration file for EdgeStream:
-```bash
-sudo nano /etc/nginx/sites-available/edgestream
-```
-
-Paste the following, making sure to replace `stream.yourdomain.com` with your actual domain:
+### 4. Serve Media and Static Files (Nginx)
+Nginx should sit in front of Gunicorn to handle static assets and media files (which are large and slow to serve via Python). 
+Sample Nginx Configuration:
 ```nginx
 server {
     listen 80;
-    
-    # CRITICAL: This ensures NGINX only routes traffic here if the tunnel asks for this specific domain!
-    server_name stream.yourdomain.com; 
+    server_name edgestream.iceboxers.qzz.io;
 
-    # 1. Serve heavy media/HLS files directly bypassing Django
+    location /static/ {
+        alias /path/to/edgestream/staticfiles/;
+    }
+
     location /media/ {
-        alias /home/gab/edgestream/media/;
-        add_header Accept-Ranges bytes;
+        alias /path/to/edgestream/media/;
     }
 
-    location /hls/ {
-        alias /home/gab/edgestream/media/hls/;
-        add_header Cache-Control "public, max-age=31536000, immutable";
-        add_header Access-Control-Allow-Origin *;
-        types {
-            application/vnd.apple.mpegurl m3u8;
-            video/mp2t ts;
-        }
-    }
-
-    # 2. Proxy web traffic to EdgeStream's unique port (8001)
     location / {
-        proxy_pass http://127.0.0.1:8001;
+        proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-For $proxy_addrs;
     }
 }
 ```
 
-Enable the configuration and reload NGINX:
+---
+
+## Part 2: Mobile App Deployment (Expo EAS)
+
+The React Native mobile app (`edgestream-app`) can be packaged into an installable `.apk` or `.aab` for Android, and an `.ipa` for iOS using Expo Application Services (EAS).
+
+### 1. Update Production URLs
+Before building the app, make sure it points to your production server!
+1. Open `edgestream-app/config.js`.
+2. Change the `API_URL` and `BASE_URL` to point to your new live server:
+```javascript
+export const BASE_URL = 'https://edgestream.iceboxers.qzz.io';
+export const API_URL = 'https://edgestream.iceboxers.qzz.io/api';
+```
+
+### 2. Install EAS CLI
+Install the Expo EAS command-line tool globally on your system:
 ```bash
-sudo ln -s /etc/nginx/sites-available/edgestream /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl reload nginx
+npm install -g eas-cli
+```
+
+### 3. Log in to Expo
+Authenticate your terminal with your Expo account:
+```bash
+eas login
+```
+
+### 4. Build for Android (APK)
+We have already configured `eas.json` to support direct `.apk` building.
+Run this command to build an APK that you can drag and drop onto any Android device:
+```bash
+eas build -p android --profile preview
+```
+
+### 5. Build for Android (Play Store)
+If you want to publish the app to the Google Play Store, you need an Android App Bundle (`.aab`):
+```bash
+eas build -p android --profile production
+```
+
+### 6. Build for iOS
+Building for iOS requires an Apple Developer account ($99/yr). If you have one, run:
+```bash
+eas build -p ios
 ```
 
 ---
 
-## Step 3: Run EdgeStream as Systemd Services
-
-We need to bind Gunicorn to port `8001` so it doesn't break your other project.
-
-1. **Gunicorn Web Server**:
-   ```bash
-   sudo nano /etc/systemd/system/edgestream-web.service
-   ```
-   ```ini
-   [Unit]
-   Description=EdgeStream Gunicorn Server
-   After=network.target
-
-   [Service]
-   User=root
-   Group=root
-   WorkingDirectory=/home/gab/edgestream
-   Environment="PATH=/home/gab/edgestream/venv/bin"
-   # Notice we are binding to 8001 here!
-   ExecStart=/home/gab/edgestream/venv/bin/gunicorn mediaserver.wsgi:application --bind 127.0.0.1:8001 --workers 3
-   Restart=always
-
-   [Install]
-   WantedBy=multi-user.target
-   ```
-
-2. **Background Video Converter Worker**:
-   ```bash
-   sudo nano /etc/systemd/system/edgestream-worker.service
-   ```
-   ```ini
-   [Unit]
-   Description=EdgeStream Background Worker
-   After=network.target
-
-   [Service]
-   User=root
-   WorkingDirectory=/home/gab/edgestream
-   Environment="PATH=/home/gab/edgestream/venv/bin"
-   # This loop automatically detects new files (scan_media) and then converts them!
-   ExecStart=/bin/bash -c 'while true; do /home/gab/edgestream/venv/bin/python manage.py scan_media; /home/gab/edgestream/venv/bin/python manage.py process_conversion_queue --limit 10; sleep 30; done'
-   Restart=always
-
-   [Install]
-   WantedBy=multi-user.target
-   ```
-
-3. **Start Both Services**:
-   ```bash
-   sudo systemctl daemon-reload
-   sudo systemctl enable --now edgestream-web
-   sudo systemctl enable --now edgestream-worker
-   ```
-
----
-
-## Step 4: Configure Cloudflare Tunnel
-
-In your Cloudflare Zero Trust Dashboard:
-1. Go to your active Tunnel.
-2. Under the **Public Hostname** tab, add a new hostname (e.g., `stream.yourdomain.com`).
-3. Set the **Service** to: `http://localhost:80`
-
-**How it works**:
-When someone visits `stream.yourdomain.com`, Cloudflare securely hits NGINX on port 80. NGINX reads the `server_name` block and realizes the request is for EdgeStream. It then serves the video chunks directly or passes the web traffic to Gunicorn running safely on port 8001, leaving your other project completely untouched!
+## Architecture Summary
+- **Database**: SQLite (Upgrade to PostgreSQL recommended for heavy traffic).
+- **Video Conversion**: FFMPEG runs synchronously or asynchronously depending on implementation. Keep `media/hls` writable.
+- **Frontend App**: React Native (Expo). Uses JWT for authentication.

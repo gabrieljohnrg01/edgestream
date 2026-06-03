@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Movie, Series, Season, Episode
+from .models import Movie, Series, Season, Episode, WatchlistItem
 from django.contrib.auth.models import User
 
 class UserSerializer(serializers.ModelSerializer):
@@ -25,6 +25,7 @@ from library.views import get_hls_playlist_path
 
 class MovieSerializer(serializers.ModelSerializer):
     hls_url = serializers.SerializerMethodField()
+    genre_names = serializers.StringRelatedField(many=True, source='genres', read_only=True)
     
     class Meta:
         model = Movie
@@ -52,7 +53,22 @@ class SeasonSerializer(serializers.ModelSerializer):
 
 class SeriesSerializer(serializers.ModelSerializer):
     seasons = SeasonSerializer(many=True, read_only=True)
+    genre_names = serializers.StringRelatedField(many=True, source='genres', read_only=True)
 
     class Meta:
         model = Series
         fields = '__all__'
+
+class WatchlistItemSerializer(serializers.ModelSerializer):
+    movie = MovieSerializer(read_only=True)
+    series = SeriesSerializer(read_only=True)
+    movie_id = serializers.PrimaryKeyRelatedField(queryset=Movie.objects.all(), source='movie', write_only=True, required=False)
+    series_id = serializers.PrimaryKeyRelatedField(queryset=Series.objects.all(), source='series', write_only=True, required=False)
+
+    class Meta:
+        model = WatchlistItem
+        fields = ['id', 'movie', 'series', 'movie_id', 'series_id', 'added_at']
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
