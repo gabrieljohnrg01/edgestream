@@ -41,8 +41,8 @@ class Command(BaseCommand):
         # Download using the precise database title and year
         if item_type == 'Movie':
             year = item.release_date.year if getattr(item, 'release_date', None) else None
-            download_subtitles_with_subliminal(infile, title=item.title, year=year)
-            ext_subs = fuzzy_match_subtitles(infile, item.title, year)
+            download_subtitles_with_subliminal(infile, title=item.title, year=year, output_dir=variant_root)
+            ext_subs = fuzzy_match_subtitles(infile, item.title, year, output_dir=variant_root)
         else:
             # Episode: use series title and explicit season/episode numbers
             series_title = item.season.series.title
@@ -50,8 +50,8 @@ class Command(BaseCommand):
             season_num = item.season.season_number
             ep_num = item.episode_number
             
-            download_subtitles_with_subliminal(infile, title=series_title, year=year, season=season_num, episode=ep_num)
-            ext_subs = fuzzy_match_subtitles(infile, series_title, year)
+            download_subtitles_with_subliminal(infile, title=series_title, year=year, season=season_num, episode=ep_num, output_dir=variant_root)
+            ext_subs = fuzzy_match_subtitles(infile, series_title, year, output_dir=variant_root)
         
         if ext_subs:
             convert_external_subtitles_to_vtt(ffmpeg, ext_subs, variant_root)

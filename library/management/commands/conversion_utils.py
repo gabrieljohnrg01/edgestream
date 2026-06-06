@@ -38,20 +38,20 @@ def probe_streams(ffmpeg, filepath):
                     
     return audio_streams, subtitle_streams
 
-def fuzzy_match_subtitles(video_path, title, year):
+def fuzzy_match_subtitles(infile, title, year=None, output_dir=None):
     """
-    Scans the directory of video_path for .srt or .vtt files that roughly match the title.
+    Scans the directory for .srt or .vtt files that roughly match the title.
     Returns a list of matched file paths.
     """
-    dir_path = Path(video_path).parent
+    directory = Path(output_dir) if output_dir else Path(infile).parent
     matched_subs = []
     
-    if not dir_path.exists():
+    if not directory.exists():
         return matched_subs
         
     title_clean = re.sub(r'[^a-zA-Z0-9]', '', title.lower()) if title else ""
     
-    for sub_file in dir_path.glob("*"):
+    for sub_file in directory.glob("*"):
         if sub_file.suffix.lower() in [".srt", ".vtt"]:
             sub_name = sub_file.stem.lower()
             sub_clean = re.sub(r'[^a-zA-Z0-9]', '', sub_name)
@@ -65,12 +65,12 @@ def fuzzy_match_subtitles(video_path, title, year):
                     matched_subs.append(sub_file)
                     
             # Or if it exact matches the video stem
-            elif sub_file.stem == Path(video_path).stem:
+            elif sub_file.stem == Path(infile).stem:
                 matched_subs.append(sub_file)
                 
     return list(set(matched_subs))
 
-def download_subtitles_with_subliminal(video_path, title=None, year=None, season=None, episode=None):
+def download_subtitles_with_subliminal(video_path, title=None, year=None, season=None, episode=None, output_dir=None):
     """
     Tries to download English subtitles for the video using subliminal.
     Returns the path to the downloaded subtitle file, or None.
@@ -99,10 +99,15 @@ def download_subtitles_with_subliminal(video_path, title=None, year=None, season
         best_subs = subliminal.download_best_subtitles([video], {Language('eng')}, provider_configs=provider_configs)
         
         saved_paths = []
+        out_dir = Path(output_dir) if output_dir else Path(video_path).parent
+        
+        # Ensure out_dir exists
+        out_dir.mkdir(parents=True, exist_ok=True)
+        
         for v, subs in best_subs.items():
             if subs:
-                # Save it in the same directory as the video
-                subliminal.save_subtitles(v, subs, directory=str(Path(video_path).parent))
+                # Save it in the directory
+                subliminal.save_subtitles(v, subs, directory=str(out_dir))
                 # subliminal creates files like video.en.srt
                 for sub in subs:
                     # subliminal doesn't return the exact path saved, we just glob for .srt
