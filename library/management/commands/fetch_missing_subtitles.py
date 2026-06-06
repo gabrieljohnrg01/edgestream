@@ -26,10 +26,7 @@ class Command(BaseCommand):
             raw_path = raw_path[6:]
             
         infile = MEDIA_ROOT / raw_path
-        if not infile.exists():
-            self.stdout.write(f"DEBUG: '{item.title}' skipped because file doesn't exist at: {infile}")
-            return 0
-            
+        
         rel_path = Path(raw_path)
         variant_root = HLS_ROOT / rel_path.with_suffix("")
         
