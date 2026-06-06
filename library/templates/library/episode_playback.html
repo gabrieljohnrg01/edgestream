@@ -570,6 +570,42 @@ video.addEventListener('canplay', () => { loadingSpinner.style.display = 'none';
 
 let settingsView = 'main';
 let selectedQualityIndex = -1;
+let subtitleOffset = 0;
+
+function adjustSubSync(delta, event, reset = false) {
+    if (event) event.stopPropagation();
+    if (reset) {
+        subtitleOffset = 0;
+    } else {
+        subtitleOffset += delta;
+    }
+    const valSpan = document.getElementById('sub-sync-val');
+    if(valSpan) valSpan.innerText = (subtitleOffset > 0 ? '+' : '') + subtitleOffset.toFixed(1) + 's';
+    applySubtitleOffset();
+}
+
+function applySubtitleOffset() {
+    const textTracks = video.textTracks;
+    if (!textTracks) return;
+    for (let i = 0; i < textTracks.length; i++) {
+        const cues = textTracks[i].cues;
+        if (cues) {
+            for (let j = 0; j < cues.length; j++) {
+                let cue = cues[j];
+                if (cue.originalStartTime === undefined) {
+                    cue.originalStartTime = cue.startTime;
+                    cue.originalEndTime = cue.endTime;
+                }
+                cue.startTime = cue.originalStartTime + subtitleOffset;
+                cue.endTime = cue.originalEndTime + subtitleOffset;
+            }
+        }
+    }
+}
+
+document.querySelectorAll('track').forEach(trackEl => {
+    trackEl.addEventListener('load', applySubtitleOffset);
+});
 
 function buildSettingsMenu(hlsInstance) {
     settingsMenu.innerHTML = '';
@@ -614,6 +650,7 @@ function buildSettingsMenu(hlsInstance) {
 
         settingsMenu.appendChild(createMainItem('Audio track', activeAudio, 'bi-music-note-beamed', () => { settingsView = 'audio'; buildSettingsMenu(hlsInstance); }));
         settingsMenu.appendChild(createMainItem('Subtitles/CC', activeSub, 'bi-badge-cc', () => { settingsView = 'subtitles'; buildSettingsMenu(hlsInstance); }));
+        settingsMenu.appendChild(createMainItem('Subtitle Sync', (subtitleOffset > 0 ? '+' : '') + subtitleOffset.toFixed(1) + 's', 'bi-stopwatch', () => { settingsView = 'subsync'; buildSettingsMenu(hlsInstance); }));
         settingsMenu.appendChild(createMainItem('Quality', activeQual, 'bi-sliders', () => { settingsView = 'quality'; buildSettingsMenu(hlsInstance); }));
         
     } else {
@@ -697,10 +734,33 @@ function buildSettingsMenu(hlsInstance) {
                     settingsMenu.appendChild(createOptionItem(name, track.mode === 'showing', () => {
                         for(let j=0; j<video.textTracks.length; j++) video.textTracks[j].mode = 'hidden';
                         track.mode = 'showing';
+                        applySubtitleOffset();
                         settingsView = 'main'; buildSettingsMenu(hlsInstance);
                     }));
                 }
             }
+        }
+        else if (settingsView === 'subsync') {
+            const syncContainer = document.createElement('div');
+            syncContainer.style.padding = '20px';
+            syncContainer.style.textAlign = 'center';
+            syncContainer.style.color = 'white';
+            syncContainer.innerHTML = `
+                <div style="margin-bottom: 15px; font-size: 1.1rem;">Subtitle Delay</div>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 15px;">
+                    <button class="player-btn" onclick="adjustSubSync(-0.5, event)" style="background: rgba(255,255,255,0.1); border-radius: 5px; padding: 5px 15px; width: auto; height: auto;">-0.5s</button>
+                    <span id="sub-sync-val" style="font-size: 1.2rem; min-width: 60px;">${(subtitleOffset > 0 ? '+' : '') + subtitleOffset.toFixed(1)}s</span>
+                    <button class="player-btn" onclick="adjustSubSync(0.5, event)" style="background: rgba(255,255,255,0.1); border-radius: 5px; padding: 5px 15px; width: auto; height: auto;">+0.5s</button>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-top: 15px;">
+                    <button class="player-btn" onclick="adjustSubSync(-0.1, event)" style="background: rgba(255,255,255,0.1); border-radius: 5px; padding: 5px 10px; width: auto; height: auto; font-size: 0.9rem;">-0.1s</button>
+                    <button class="player-btn" onclick="adjustSubSync(0.1, event)" style="background: rgba(255,255,255,0.1); border-radius: 5px; padding: 5px 10px; width: auto; height: auto; font-size: 0.9rem;">+0.1s</button>
+                </div>
+                <div style="margin-top: 15px;">
+                    <button class="player-btn" onclick="adjustSubSync(0, event, true)" style="font-size: 0.9rem; opacity: 0.7; width: auto; height: auto;">Reset</button>
+                </div>
+            `;
+            settingsMenu.appendChild(syncContainer);
         }
     }
 }
