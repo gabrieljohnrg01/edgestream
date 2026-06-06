@@ -104,7 +104,13 @@ class Command(BaseCommand):
                 rel_path = os.path.relpath(full_path, MEDIA_ROOT).replace(os.sep, "/")
                 file_path = f"/media/{rel_path}"
 
-                title_guess, year_guess = extract_title_year(filename)
+                parent_dir = os.path.basename(root)
+                if parent_dir and parent_dir.lower() != 'movies':
+                    title_source = parent_dir
+                else:
+                    title_source = filename
+
+                title_guess, year_guess = extract_title_year(title_source)
                 metadata = fetch_tmdb_metadata(title_guess, "MOVIE", year_guess)
                 if not metadata:
                     self.stdout.write(self.style.WARNING(f"No TMDB metadata for '{filename}'."))

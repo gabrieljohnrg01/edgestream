@@ -89,7 +89,10 @@ router.register(r'seasons', SeasonViewSet, basename='season')
 router.register(r'episodes', EpisodeViewSet, basename='episode')
 router.register(r'watchlist', WatchlistViewSet, basename='watchlist')
 
+from django.contrib import admin
+
 urlpatterns = [
+    path("admin/", admin.site.urls),
     path("cd8e67206a28a6444351.txt", lambda request: HttpResponse("3e22655f2b541b1ac9cb", content_type="text/plain")),
     path("api/token/", TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path("api/token/refresh/", TokenRefreshView.as_view(), name='token_refresh'),
