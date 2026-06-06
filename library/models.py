@@ -13,8 +13,8 @@ class Movie(models.Model):
     file_path = models.CharField(max_length=512, unique=True)
     tmdb_id = models.IntegerField()
     description = models.TextField(blank=True)
-    poster_url = models.URLField(blank=True)
-    backdrop_url = models.URLField(blank=True)
+    poster_url = models.CharField(max_length=512, blank=True)
+    backdrop_url = models.CharField(max_length=512, blank=True)
     release_date = models.DateField(null=True, blank=True)
     duration = models.DurationField(null=True, blank=True)
     date_added = models.DateTimeField(default=timezone.now)
@@ -46,8 +46,8 @@ class Series(models.Model):
     title = models.CharField(max_length=255, unique=True)
     tmdb_id = models.IntegerField()
     description = models.TextField(blank=True)
-    poster_url = models.URLField(blank=True)
-    backdrop_url = models.URLField(blank=True)
+    poster_url = models.CharField(max_length=512, blank=True)
+    backdrop_url = models.CharField(max_length=512, blank=True)
     release_date = models.DateField(null=True, blank=True)
     date_added = models.DateTimeField(default=timezone.now)
     watch_count = models.IntegerField(default=0)
@@ -64,7 +64,7 @@ class Series(models.Model):
 class Season(models.Model):
     series = models.ForeignKey(Series, on_delete=models.CASCADE, related_name="seasons")
     season_number = models.IntegerField()
-    poster_url = models.URLField(blank=True)
+    poster_url = models.CharField(max_length=512, blank=True)
 
     class Meta:
         ordering = ["season_number"]
@@ -80,7 +80,7 @@ class Episode(models.Model):
     title = models.CharField(max_length=255, blank=True)
     file_path = models.CharField(max_length=512, unique=True)
     description = models.TextField(blank=True)
-    still_url = models.URLField(blank=True)
+    still_url = models.CharField(max_length=512, blank=True)
     is_converted = models.BooleanField(default=False)
 
     class Meta:
