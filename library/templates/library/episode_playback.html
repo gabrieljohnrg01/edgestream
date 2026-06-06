@@ -157,7 +157,7 @@ video::cue {
         transform: translateY(-50%) scale(0);
         width: 12px;
         height: 12px;
-        background: #ff0000;
+        background: var(--accent-neon-red, #ff0000);
         border-radius: 50%;
         transition: transform 0.2s ease;
         pointer-events: none;
@@ -168,7 +168,7 @@ video::cue {
     }
 .progress-bar-filled {
     height: 100%;
-    background: #e50914; /* Netflix Red */
+    background: var(--accent-crimson, #e50914);
     border-radius: 5px;
     width: 0%;
     position: relative;
@@ -228,7 +228,7 @@ video::cue {
     transform: translateY(-50%);
     width: 16px;
     height: 16px;
-    background: #e50914;
+    background: var(--accent-crimson, #e50914);
     border-radius: 50%;
     box-shadow: 0 0 5px rgba(0,0,0,0.5);
 }
