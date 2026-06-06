@@ -11,6 +11,7 @@ class Command(BaseCommand):
 
     def process_item(self, item, item_type, MEDIA_ROOT, HLS_ROOT, ffmpeg):
         if not item.file_path:
+            self.stdout.write(f"DEBUG: '{item.title}' has no file_path.")
             return 0
             
         # Robust path resolution
@@ -26,6 +27,7 @@ class Command(BaseCommand):
             
         infile = MEDIA_ROOT / raw_path
         if not infile.exists():
+            self.stdout.write(f"DEBUG: '{item.title}' skipped because file doesn't exist at: {infile}")
             return 0
             
         rel_path = Path(raw_path)
