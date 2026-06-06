@@ -140,8 +140,8 @@ class Command(BaseCommand):
         if ext_subs:
             convert_external_subtitles_to_vtt(ffmpeg, ext_subs, variant_root)
         elif not extracted_vtts:
-            # Download via subliminal
-            download_subtitles_with_subliminal(infile)
+            # Download via subliminal using explicit title and year
+            download_subtitles_with_subliminal(infile, title=title, year=year)
             # Re-check external
             new_ext_subs = fuzzy_match_subtitles(infile, title, year)
             if new_ext_subs:

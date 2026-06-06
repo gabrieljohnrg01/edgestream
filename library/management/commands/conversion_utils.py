@@ -70,7 +70,7 @@ def fuzzy_match_subtitles(video_path, title, year):
                 
     return list(set(matched_subs))
 
-def download_subtitles_with_subliminal(video_path):
+def download_subtitles_with_subliminal(video_path, title=None, year=None):
     """
     Tries to download English subtitles for the video using subliminal.
     Returns the path to the downloaded subtitle file, or None.
@@ -79,8 +79,21 @@ def download_subtitles_with_subliminal(video_path):
         import subliminal
         from babelfish import Language
         
-        video = subliminal.Video.fromname(str(video_path))
-        best_subs = subliminal.download_best_subtitles([video], {Language('eng')})
+        if title:
+            # Bypass guessit and strictly force the title and year
+            video = subliminal.video.Movie(str(video_path), title, year=year)
+        else:
+            video = subliminal.Video.fromname(str(video_path))
+            
+        from django.conf import settings
+        os_user = getattr(settings, 'OPENSUBTITLES_USERNAME', None)
+        os_pass = getattr(settings, 'OPENSUBTITLES_PASSWORD', None)
+        
+        provider_configs = None
+        if os_user and os_pass:
+            provider_configs = {'opensubtitles': {'username': os_user, 'password': os_pass}}
+            
+        best_subs = subliminal.download_best_subtitles([video], {Language('eng')}, provider_configs=provider_configs)
         
         saved_paths = []
         for v, subs in best_subs.items():
