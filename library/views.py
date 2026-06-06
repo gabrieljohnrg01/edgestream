@@ -37,6 +37,8 @@ def webview_login(request):
             pass
     return redirect('login')
 
+def account_select(request):
+    return render(request, 'library/account_select.html')
 
 def get_sunday_midnight():
     """Get the last Sunday at midnight (00:00) in timezone-aware format."""
@@ -521,7 +523,7 @@ def login_view(request):
 
 def logout_view(request):
     logout(request)
-    return redirect("index")
+    return redirect("login")
 
 
 @login_required
@@ -643,18 +645,79 @@ def api_playback_progress(request):
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 from django.contrib import messages
+from .models import UserProfile
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def api_my_profile(request):
+    try:
+        profile = request.user.profile
+    except Exception:
+        profile = UserProfile.objects.create(user=request.user)
+        
+    if request.method == 'POST':
+        theme = request.data.get('theme') or request.POST.get('theme')
+        avatar = request.FILES.get('avatar')
+        
+        if theme:
+            profile.theme = theme
+        if avatar:
+            profile.avatar = avatar
+            
+        profile.save()
+
+    avatar_url = profile.avatar.url if profile.avatar else None
+    theme = profile.theme
+        
+    return JsonResponse({
+        'username': request.user.username,
+        'avatar': avatar_url,
+        'theme': theme
+    })
 
 @login_required
 def settings_view(request):
+    try:
+        profile = request.user.profile
+    except Exception:
+        profile = UserProfile.objects.create(user=request.user)
+
     if request.method == 'POST':
-        form = PasswordChangeForm(request.user, request.POST)
-        if form.is_valid():
-            user = form.save()
-            update_session_auth_hash(request, user)
-            messages.success(request, 'Your password was successfully updated!')
+        if 'update_profile' in request.POST:
+            theme = request.POST.get('theme', 'default')
+            avatar = request.FILES.get('avatar')
+            
+            profile.theme = theme
+            if avatar:
+                profile.avatar = avatar
+            profile.save()
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                from django.http import JsonResponse
+                return JsonResponse({
+                    'status': 'success',
+                    'theme': profile.theme,
+                    'avatar': profile.avatar.url if profile.avatar else None
+                })
             return redirect('settings')
-        else:
-            messages.error(request, 'Please correct the error below.')
+            
+        elif 'update_password' in request.POST:
+            form = PasswordChangeForm(request.user, request.POST)
+            if form.is_valid():
+                user = form.save()
+                update_session_auth_hash(request, user)
+                messages.success(request, 'Your password was successfully updated!')
+                return redirect('settings')
+            else:
+                messages.error(request, 'Please correct the error below.')
     else:
         form = PasswordChangeForm(request.user)
-    return render(request, 'library/settings.html', {'form': form})
+        
+    for field in form.fields.values():
+        if 'autofocus' in field.widget.attrs:
+            del field.widget.attrs['autofocus']
+            
+    return render(request, 'library/settings.html', {'form': form, 'profile': profile})

@@ -14,7 +14,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="/static/library/mobile_style.css">
+    <link rel="stylesheet" href="/static/library/mobile_style.css?v=2">
     <link rel="apple-touch-icon" sizes="60x60" href="/static/library/favicons/apple-icon-60x60.png">
     <link rel="apple-touch-icon" sizes="72x72" href="/static/library/favicons/apple-icon-72x72.png">
     <link rel="apple-touch-icon" sizes="76x76" href="/static/library/favicons/apple-icon-76x76.png">
@@ -34,7 +34,7 @@
     {% block head_extra %}{% endblock %}
 </head>
 
-<body class="{% block body_class %}{% endblock %}">
+<body class="theme-{{ user.profile.theme|default:'default' }}">
     <div class="app-container">
         <!-- Sidebar -->
         <aside class="sidebar">
@@ -75,13 +75,21 @@
                     </form>
                     <div class="user-auth">
                         {% if user.is_authenticated %}
-                            <div class="user-avatar-container" onclick="document.getElementById('user-dropdown').classList.toggle('show')">
-                                <div class="user-avatar" style="text-transform: uppercase;">{{ user.username|make_list|first }}</div>
-                                <i class="bi bi-chevron-down" style="font-size: 0.8rem; color: var(--text-muted-gray);"></i>
-                            </div>
+                        <div class="user-avatar-container" onclick="toggleDropdown(event)">
+                            {% if user.profile.avatar %}
+                                <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1px solid var(--accent-crimson);">
+                            {% else %}
+                                <div class="user-avatar" id="nav-user-avatar">
+                                    {{ user.username|make_list|first|upper }}
+                                </div>
+                            {% endif %}
+                            <span style="font-weight: 500; font-size: 0.95rem;">{{ user.username }}</span>
+                            <i class="bi bi-chevron-down" style="font-size: 0.8rem; margin-left: 5px;"></i>
+                        </div>
                             <div id="user-dropdown" class="dropdown-menu">
                                 <a href="{% url 'settings' %}" class="dropdown-item"><i class="bi bi-gear"></i> Settings</a>
-                                <button onclick="document.getElementById('logout-form').submit();" class="dropdown-item"><i class="bi bi-box-arrow-right"></i> Logout</button>
+                                <button onclick="document.getElementById('logout-form').submit();" class="dropdown-item"><i class="bi bi-person-lines-fill"></i> Switch Account</button>
+                                <button onclick="removeAccountAndLogout('{{ user.username|escapejs }}');" class="dropdown-item" style="color: #E11D2E;"><i class="bi bi-person-x-fill"></i> Remove Account</button>
                             </div>
                             <form action="{% url 'logout' %}" method="post" id="logout-form" style="display:none;">
                                 {% csrf_token %}
@@ -123,6 +131,11 @@
         </nav>
     </div>
     <script>
+        function toggleDropdown(event) {
+            document.getElementById('user-dropdown').classList.toggle('show');
+            event.stopPropagation();
+        }
+
         window.onclick = function(event) {
             if (!event.target.closest('.user-avatar-container')) {
                 var dropdowns = document.getElementsByClassName("dropdown-menu");
@@ -133,6 +146,13 @@
                     }
                 }
             }
+        }
+        
+        function removeAccountAndLogout(username) {
+            let accounts = JSON.parse(localStorage.getItem('savedAccounts') || '[]');
+            accounts = accounts.filter(acc => acc.username.toLowerCase() !== username.toLowerCase());
+            localStorage.setItem('savedAccounts', JSON.stringify(accounts));
+            document.getElementById('logout-form').submit();
         }
     </script>
     <style>

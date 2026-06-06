@@ -20,6 +20,40 @@
     --card-bg-hover: rgba(255, 255, 255, 0.08);
 }
 
+/* Accent Colors */
+body.theme-red, body.theme-default {
+    --accent-crimson: #E11D2E;
+    --accent-neon-red: #FF3B4D;
+}
+body.theme-blue {
+    --accent-crimson: #0078D7;
+    --accent-neon-red: #2DCCFF;
+}
+body.theme-green {
+    --accent-crimson: #107C10;
+    --accent-neon-red: #39C14B;
+}
+body.theme-purple {
+    --accent-crimson: #881798;
+    --accent-neon-red: #C36BE1;
+}
+body.theme-orange {
+    --accent-crimson: #D24625;
+    --accent-neon-red: #F87A5B;
+}
+body.theme-pink {
+    --accent-crimson: #E3008C;
+    --accent-neon-red: #FF5EBD;
+}
+body.theme-teal {
+    --accent-crimson: #008272;
+    --accent-neon-red: #00C6AB;
+}
+body.theme-gold {
+    --accent-crimson: #FFB900;
+    --accent-neon-red: #FFD457;
+}
+
 body {
     margin: 0;
     font-family: 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;

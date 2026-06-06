@@ -1,0 +1,156 @@
+{% extends "library/base.html" %}
+
+{% block content %}
+<div class="account-select-container">
+    <h1 style="color: white; text-align: center; font-size: 2.5rem; margin-bottom: 50px; margin-top: 10vh;">Who's watching?</h1>
+    
+    <div id="accounts-grid" style="display: flex; flex-wrap: wrap; justify-content: center; max-width: 800px; margin: 0 auto; gap: 30px;">
+        <!-- Accounts will be injected here via Javascript -->
+    </div>
+</div>
+
+<style>
+    /* Hide the top-bar auth section since we are authenticating */
+    .user-auth { display: none !important; }
+    
+    .account-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-decoration: none;
+        cursor: pointer;
+        width: 120px;
+        transition: transform 0.2s;
+    }
+    .account-card:hover {
+        transform: scale(1.05);
+    }
+    .account-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 15px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+    .account-name {
+        color: var(--text-muted-gray);
+        font-size: 1.1rem;
+        font-weight: 500;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
+        transition: color 0.2s;
+    }
+    .account-card:hover .account-name {
+        color: white;
+    }
+    .add-account-avatar {
+        background: transparent;
+        border: 2px solid var(--text-muted-gray);
+        color: var(--text-muted-gray);
+        transition: border-color 0.2s, color 0.2s;
+    }
+    .account-card:hover .add-account-avatar {
+        border-color: white;
+        color: white;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const grid = document.getElementById('accounts-grid');
+        const accounts = JSON.parse(localStorage.getItem('savedAccounts') || '[]');
+        
+        if (accounts.length === 0) {
+            window.location.href = "{% url 'login' %}?force_login=1";
+            return;
+        }
+
+        const gradients = [
+            'linear-gradient(135deg, #FF3B4D, #8C0C18)', // Red
+            'linear-gradient(135deg, #4B6CB7, #182848)', // Deep Blue
+            'linear-gradient(135deg, #11998E, #38EF7D)', // Green
+            'linear-gradient(135deg, #FC4A1A, #F7B733)', // Orange
+            'linear-gradient(135deg, #8E2DE2, #4A00E0)', // Purple
+            'linear-gradient(135deg, #F09819, #EDDE5D)', // Yellow/Gold
+        ];
+
+        function getGradient(username) {
+            let sum = 0;
+            for (let i = 0; i < username.length; i++) {
+                sum += username.charCodeAt(i);
+            }
+            return gradients[sum % gradients.length];
+        }
+
+        const themeColors = {
+            'default': '#E11D2E',
+            'red': '#E11D2E',
+            'blue': '#0078D7',
+            'green': '#107C10',
+            'purple': '#881798',
+            'orange': '#D24625',
+            'pink': '#E3008C',
+            'teal': '#008272',
+            'gold': '#FFB900'
+        };
+
+        function getThemeColor(themeName) {
+            return themeColors[themeName] || themeColors['default'];
+        }
+
+        accounts.forEach(acc => {
+            const card = document.createElement('a');
+            card.className = 'account-card';
+            card.href = `/api/webview-login/?token=${acc.token}&next=/`;
+            
+            if (acc.avatar) {
+                const img = document.createElement('img');
+                img.src = acc.avatar;
+                img.className = 'account-avatar';
+                img.style.objectFit = 'cover';
+                img.style.border = '2px solid ' + getThemeColor(acc.theme);
+                card.appendChild(img);
+            } else {
+                const avatar = document.createElement('div');
+                avatar.className = 'account-avatar';
+                avatar.style.background = getGradient(acc.username);
+                avatar.textContent = acc.username.charAt(0).toUpperCase();
+                card.appendChild(avatar);
+            }
+            
+            const name = document.createElement('div');
+            name.className = 'account-name';
+            name.textContent = acc.username;
+            
+            card.appendChild(name);
+            grid.appendChild(card);
+        });
+
+        // Add "Add Account" button
+        const addCard = document.createElement('a');
+        addCard.className = 'account-card';
+        addCard.href = "{% url 'login' %}?force_login=1";
+        
+        const addAvatar = document.createElement('div');
+        addAvatar.className = 'account-avatar add-account-avatar';
+        addAvatar.innerHTML = '<i class="bi bi-plus" style="font-size: 3rem;"></i>';
+        
+        const addName = document.createElement('div');
+        addName.className = 'account-name';
+        addName.textContent = 'Add Account';
+        
+        addCard.appendChild(addAvatar);
+        addCard.appendChild(addName);
+        grid.appendChild(addCard);
+    });
+</script>
+{% endblock %}

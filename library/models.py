@@ -8,6 +8,15 @@ class Genre(models.Model):
         return self.name
 
 
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
+    theme = models.CharField(max_length=50, default='default')
+
+    def __str__(self):
+        return f"{self.user.username}'s profile"
+
+
 class Movie(models.Model):
     title = models.CharField(max_length=255)
     file_path = models.CharField(max_length=512, unique=True)

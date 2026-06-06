@@ -4,6 +4,45 @@
 <div class="section" style="max-width: 600px; margin: 40px auto; min-height: 50vh;">
     <h2 style="font-size: 1.8rem; font-weight: 700; margin-bottom: 24px; color: var(--text-soft-white);">Account Settings</h2>
     
+    <div style="background: var(--bg-soft-graphite); padding: 30px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 24px;">
+        <h3 style="font-size: 1.2rem; font-weight: 600; margin-top: 0; margin-bottom: 20px; color: var(--text-soft-white); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">User Profile</h3>
+        
+        <form method="post" enctype="multipart/form-data" id="profile-form">
+            {% csrf_token %}
+            <input type="hidden" name="update_profile" value="1">
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-muted-gray); font-size: 0.9rem;">Avatar</label>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    {% if profile.avatar %}
+                        <img src="{{ profile.avatar.url }}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-crimson);">
+                    {% else %}
+                        <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--bg-charcoal); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: var(--text-muted-gray);">
+                            {{ user.username|make_list|first|upper }}
+                        </div>
+                    {% endif %}
+                    <input type="file" name="avatar" id="avatar-input" accept="image/*" style="color: var(--text-soft-white); font-size: 0.9rem;">
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 12px; color: var(--text-soft-white); font-size: 1rem;">Accent Color</label>
+                <input type="hidden" name="theme" id="theme-input" value="{{ profile.theme|default:'default' }}">
+                <div class="theme-grid">
+                    <div class="theme-swatch" data-theme="red" style="background: #E11D2E;" title="Red"></div>
+                    <div class="theme-swatch" data-theme="blue" style="background: #0078D7;" title="Blue"></div>
+                    <div class="theme-swatch" data-theme="green" style="background: #107C10;" title="Green"></div>
+                    <div class="theme-swatch" data-theme="purple" style="background: #881798;" title="Purple"></div>
+                    <div class="theme-swatch" data-theme="orange" style="background: #D24625;" title="Orange"></div>
+                    <div class="theme-swatch" data-theme="pink" style="background: #E3008C;" title="Pink"></div>
+                    <div class="theme-swatch" data-theme="teal" style="background: #008272;" title="Teal"></div>
+                    <div class="theme-swatch" data-theme="gold" style="background: #FFB900;" title="Gold"></div>
+                </div>
+            </div>
+            <!-- Removed Save Profile button, auto-submits now -->
+        </form>
+    </div>
+
     <div style="background: var(--bg-soft-graphite); padding: 30px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
         <h3 style="font-size: 1.2rem; font-weight: 600; margin-top: 0; margin-bottom: 20px; color: var(--text-soft-white); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">Change Password</h3>
         
@@ -17,6 +56,7 @@
 
         <form method="post">
             {% csrf_token %}
+            <input type="hidden" name="update_password" value="1">
             {% for field in form %}
                 <div style="margin-bottom: 20px;">
                     <label for="{{ field.id_for_label }}" style="display: block; margin-bottom: 8px; color: var(--text-muted-gray); font-size: 0.9rem;">{{ field.label }}</label>
@@ -45,8 +85,13 @@
         outline: none;
         box-sizing: border-box;
     }
-    input[type="password"]:focus, input[type="text"]:focus {
+    input[type="password"]:focus, input[type="text"]:focus, select:focus {
         border-color: var(--accent-crimson);
+    }
+    
+    select option {
+        background: var(--bg-charcoal);
+        color: var(--text-soft-white);
     }
     .helptext {
         font-size: 0.8rem;
@@ -54,5 +99,117 @@
         display: block;
         margin-top: 6px;
     }
+
+    /* Windows 10 Theme Grid Styles */
+    .theme-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+        gap: 4px;
+        max-width: 400px;
+    }
+    .theme-swatch {
+        width: 100%;
+        aspect-ratio: 1;
+        cursor: pointer;
+        position: relative;
+        border: 2px solid transparent;
+        transition: transform 0.1s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .theme-swatch:hover {
+        transform: scale(1.05);
+        z-index: 10;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+    .theme-swatch.selected {
+        border: 2px solid white;
+    }
+    .theme-swatch.selected::after {
+        content: '';
+        width: 10px;
+        height: 20px;
+        border: solid white;
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+        margin-top: -4px; /* Optical adjustment */
+        filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.5));
+    }
+    /* White checkmark for all swatches */
+    .theme-swatch.selected::after {
+        border-color: white;
+    }
 </style>
+
+<script>
+    function syncAccountToLocal(username, theme, avatarUrl) {
+        try {
+            let accountsStr = localStorage.getItem('savedAccounts');
+            if (accountsStr) {
+                let accounts = JSON.parse(accountsStr);
+                let updated = false;
+                for (let i = 0; i < accounts.length; i++) {
+                    if (accounts[i].username.toLowerCase() === username.toLowerCase()) {
+                        if (theme !== undefined) accounts[i].theme = theme;
+                        if (avatarUrl !== undefined) accounts[i].avatar = avatarUrl;
+                        updated = true;
+                        break;
+                    }
+                }
+                if (updated) {
+                    localStorage.setItem('savedAccounts', JSON.stringify(accounts));
+                }
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    // Sync on page load to handle avatar uploads (since they trigger a page reload)
+    syncAccountToLocal(
+        "{{ user.username }}", 
+        "{{ profile.theme|default:'default' }}", 
+        "{% if profile.avatar %}{{ profile.avatar.url }}{% endif %}" || null
+    );
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const themeInput = document.getElementById('theme-input');
+        
+        document.querySelectorAll('.theme-swatch').forEach(swatch => {
+            if (swatch.dataset.theme === themeInput.value) {
+                swatch.classList.add('selected');
+            }
+            
+            swatch.addEventListener('click', function() {
+                document.querySelectorAll('.theme-swatch').forEach(s => s.classList.remove('selected'));
+                this.classList.add('selected');
+                themeInput.value = this.dataset.theme;
+                
+                // Immediately apply theme and auto-submit
+                document.body.className = 'theme-' + this.dataset.theme;
+                
+                const formData = new FormData(document.getElementById('profile-form'));
+                fetch(window.location.href, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    syncAccountToLocal(data.username || "{{ user.username }}", data.theme, data.avatar);
+                })
+                .catch(err => console.error("Failed to save theme", err));
+            });
+        });
+        
+        // Auto-submit when an avatar is selected
+        const avatarInput = document.getElementById('avatar-input');
+        if (avatarInput) {
+            avatarInput.addEventListener('change', function() {
+                if (this.files && this.files.length > 0) {
+                    document.getElementById('profile-form').submit();
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}

@@ -1,12 +1,20 @@
 {% extends "library/base.html" %}
 
 {% block content %}
+<script>
+    if (localStorage.getItem('savedAccounts') && !window.location.search.includes('force_login')) {
+        const accounts = JSON.parse(localStorage.getItem('savedAccounts') || '[]');
+        if (accounts.length > 0) {
+            window.location.href = "{% url 'account_select' %}";
+        }
+    }
+</script>
 <div class="section" style="max-width: 400px; margin: 60px auto; min-height: 50vh;">
     
     <div style="background: var(--bg-soft-graphite); padding: 40px 30px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
         <h2 style="font-size: 1.8rem; font-weight: 700; margin-top: 0; margin-bottom: 30px; color: var(--text-soft-white); text-align: center;">Welcome Back</h2>
         
-        <form method="post">
+        <form method="post" id="login-form">
             {% csrf_token %}
             
             {% if form.errors %}
@@ -62,4 +70,52 @@
         margin-top: 6px;
     }
 </style>
+
+<script>
+    document.getElementById('login-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+        const username = formData.get('username');
+        const password = formData.get('password');
+        
+        try {
+            const response = await fetch('/api/token/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            if (response.ok) {
+                const data = await response.json();
+                
+                let avatar = null;
+                let theme = 'default';
+                try {
+                    const profileRes = await fetch('/api/profile/me/', {
+                        headers: { 'Authorization': 'Bearer ' + data.access }
+                    });
+                    if (profileRes.ok) {
+                        const profileData = await profileRes.json();
+                        avatar = profileData.avatar;
+                        theme = profileData.theme;
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch profile", e);
+                }
+
+                let accounts = JSON.parse(localStorage.getItem('savedAccounts') || '[]');
+                accounts = accounts.filter(acc => acc.username.toLowerCase() !== username.toLowerCase());
+                accounts.push({ username, token: data.access, avatar, theme, dateAdded: Date.now() });
+                localStorage.setItem('savedAccounts', JSON.stringify(accounts));
+            }
+        } catch (err) {
+            console.error("Failed to fetch token", err);
+        }
+        
+        // Temporarily remove our event listener so we can submit the form natively
+        const newForm = form.cloneNode(true);
+        form.parentNode.replaceChild(newForm, form);
+        newForm.submit();
+    });
+</script>
 {% endblock %}
