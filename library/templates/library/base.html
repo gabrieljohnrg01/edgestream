@@ -146,7 +146,135 @@
         :focus:not(:focus-visible) {
             outline: none !important;
         }
+
+        /* Top 10 Badge Styling */
+        .top10-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent-crimson, #e50914) 0%, #8a050c 100%);
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 800;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            z-index: 10;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+
+        /* Universal Scroll Buttons */
+        .scroll-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.1);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            cursor: pointer;
+            z-index: 20;
+            opacity: 0;
+            transition: opacity 0.3s, background 0.3s, transform 0.2s;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+        }
+        .scroll-btn-wrapper:hover .scroll-btn:not(.disabled) {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .scroll-btn.disabled {
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+        .scroll-btn:hover {
+            background: var(--accent-crimson, #e50914);
+            transform: translateY(-50%) scale(1.1);
+            border-color: rgba(255,255,255,0.3);
+        }
+        .left-btn { left: -22px; }
+        .right-btn { right: -22px; }
+        
+        .scroll-row::-webkit-scrollbar {
+            display: none;
+        }
+        .scroll-row {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const rows = document.querySelectorAll('.scroll-row');
+            rows.forEach(row => {
+                // Wrap row in a relative container
+                const wrapper = document.createElement('div');
+                wrapper.className = 'scroll-btn-wrapper';
+                wrapper.style.position = 'relative';
+                row.parentNode.insertBefore(wrapper, row);
+                wrapper.appendChild(row);
+
+                // Create Left Button
+                const leftBtn = document.createElement('button');
+                leftBtn.innerHTML = '<i class="bi bi-chevron-left"></i>';
+                leftBtn.className = 'scroll-btn left-btn disabled';
+                
+                // Create Right Button
+                const rightBtn = document.createElement('button');
+                rightBtn.innerHTML = '<i class="bi bi-chevron-right"></i>';
+                rightBtn.className = 'scroll-btn right-btn';
+
+                wrapper.appendChild(leftBtn);
+                wrapper.appendChild(rightBtn);
+
+                // Scroll amount (approx 3 cards)
+                const scrollAmount = 700;
+
+                leftBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    row.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+                });
+                
+                rightBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    row.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+                });
+
+                const toggleButtons = () => {
+                    if (row.scrollLeft > 10) {
+                        leftBtn.classList.remove('disabled');
+                    } else {
+                        leftBtn.classList.add('disabled');
+                    }
+                    
+                    const maxScroll = row.scrollWidth - row.clientWidth;
+                    if (row.scrollLeft < maxScroll - 10) {
+                        rightBtn.classList.remove('disabled');
+                    } else {
+                        rightBtn.classList.add('disabled');
+                    }
+                };
+
+                row.addEventListener('scroll', toggleButtons);
+                // Initial check
+                setTimeout(toggleButtons, 500);
+                window.addEventListener('resize', toggleButtons);
+            });
+        });
+    </script>
     <script src="/static/library/gamepad_nav.js"></script>
 </body>
 

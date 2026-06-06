@@ -98,6 +98,24 @@
 </script>
 {% endif %}
 
+<!-- Top 10 TV Shows Section -->
+<div class="section" style="margin-bottom: 40px;">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px;">
+        <h2 style="font-size: 1.2rem; font-weight: 600; margin: 0;">Top 10 TV Shows of the Week</h2>
+    </div>
+    <div class="scroll-row" style="display: flex; overflow-x: auto; gap: 20px; padding-bottom: 16px; padding-top: 4px; padding-left: 15px;">
+        {% for item in top_series_weekly %}
+            <a href="{% url 'series_detail' item.pk %}" class="card" style="flex: 0 0 auto; width: 220px; position: relative;">
+                <div class="top10-badge">#{{ forloop.counter }}</div>
+                <img src="{{ item.poster_url }}" alt="{{ item.title }}" style="position: relative; z-index: 5;">
+                <h3 class="card-title">{{ item.title }}</h3>
+            </a>
+        {% empty %}
+            <p style="color: var(--text-muted-gray);">No TV shows watched this week yet.</p>
+        {% endfor %}
+    </div>
+</div>
+
 <!-- Categorized Series Rows -->
 {% for row in genre_rows %}
 <div class="section" style="margin-bottom: 40px;">

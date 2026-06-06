@@ -183,20 +183,22 @@ def get_media_duration(file_path):
 def index(request):
     recently_added = get_combined_recently_added(limit=20)
     top_items = get_combined_top_items(limit=10)
-    all_movies = Movie.objects.filter(is_converted=True).order_by("title")[:20]
-    all_series = get_converted_series_queryset().order_by("title")[:20]
     
-    # Get featured item (top watched, or random from top 10)
-    featured = top_items[0] if top_items else None
-    featured_items = top_items[:4] if top_items else []
+    # Explicitly pull Top 10 weekly for movies and series
+    top_movies_weekly = Movie.objects.filter(is_converted=True).order_by("-watch_count", "-date_added")[:10]
+    top_series_weekly = get_converted_series_queryset().order_by("-watch_count", "-date_added")[:10]
+    
+    # The Featured Hero should show the newly added items
+    featured = recently_added[0] if recently_added else None
+    featured_items = recently_added[:4] if recently_added else []
     
     context = {
         "featured": featured,
         "featured_items": featured_items,
         "recently_added": recently_added,
         "top_items": top_items,
-        "all_movies": all_movies,
-        "all_series": all_series,
+        "top_movies_weekly": top_movies_weekly,
+        "top_series_weekly": top_series_weekly,
     }
     return render(request, "library/index.html", context)
 
@@ -220,7 +222,8 @@ def search(request):
 
 
 def movies(request):
-    featured_items = Movie.objects.filter(is_converted=True).order_by("-watch_count")[:4]
+    featured_items = Movie.objects.filter(is_converted=True).order_by("-date_added")[:4]
+    top_movies_weekly = Movie.objects.filter(is_converted=True).order_by("-watch_count", "-date_added")[:10]
     
     genre_rows = []
     
@@ -236,13 +239,15 @@ def movies(request):
             
     context = {
         "featured_items": featured_items,
+        "top_movies_weekly": top_movies_weekly,
         "genre_rows": genre_rows,
     }
     return render(request, "library/movies.html", context)
 
 
 def series(request):
-    featured_items = get_converted_series_queryset().order_by("-watch_count")[:4]
+    featured_items = get_converted_series_queryset().order_by("-date_added")[:4]
+    top_series_weekly = get_converted_series_queryset().order_by("-watch_count", "-date_added")[:10]
     
     genre_rows = []
     
@@ -258,6 +263,7 @@ def series(request):
             
     context = {
         "featured_items": featured_items,
+        "top_series_weekly": top_series_weekly,
         "genre_rows": genre_rows,
     }
     return render(request, "library/series.html", context)
