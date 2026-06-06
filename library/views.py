@@ -350,9 +350,17 @@ def get_hls_subtitles(file_path):
     MEDIA_ROOT = Path(os.environ.get("MEDIA_ROOT", str(settings.MEDIA_ROOT)))
     HLS_ROOT = Path(os.environ.get("HLS_ROOT", str(MEDIA_ROOT / "hls")))
     
-    if not file_path.startswith("/media/"):
-        return []
-    rel_path = Path(file_path[len("/media/"):])
+    raw_path = str(file_path)
+    if raw_path.startswith('/media/'):
+        raw_path = raw_path[7:]
+    elif raw_path.startswith('media/'):
+        raw_path = raw_path[6:]
+    elif raw_path.startswith('\\media\\'):
+        raw_path = raw_path[7:]
+    elif raw_path.startswith('media\\'):
+        raw_path = raw_path[6:]
+        
+    rel_path = Path(raw_path)
     variant_root = HLS_ROOT / rel_path.with_suffix("")
     
     subs = []

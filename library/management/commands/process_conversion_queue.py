@@ -141,7 +141,9 @@ class Command(BaseCommand):
             convert_external_subtitles_to_vtt(ffmpeg, ext_subs, variant_root)
         elif not extracted_vtts:
             # Download via subliminal using explicit title and year
-            download_subtitles_with_subliminal(infile, title=title, year=year)
+            season_num = task.episode.season.season_number if hasattr(task, 'episode') and task.episode else None
+            ep_num = task.episode.episode_number if hasattr(task, 'episode') and task.episode else None
+            download_subtitles_with_subliminal(infile, title=title, year=year, season=season_num, episode=ep_num)
             # Re-check external
             new_ext_subs = fuzzy_match_subtitles(infile, title, year)
             if new_ext_subs:

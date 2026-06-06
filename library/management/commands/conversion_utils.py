@@ -70,7 +70,7 @@ def fuzzy_match_subtitles(video_path, title, year):
                 
     return list(set(matched_subs))
 
-def download_subtitles_with_subliminal(video_path, title=None, year=None):
+def download_subtitles_with_subliminal(video_path, title=None, year=None, season=None, episode=None):
     """
     Tries to download English subtitles for the video using subliminal.
     Returns the path to the downloaded subtitle file, or None.
@@ -79,8 +79,11 @@ def download_subtitles_with_subliminal(video_path, title=None, year=None):
         import subliminal
         from babelfish import Language
         
-        if title:
-            # Bypass guessit and strictly force the title and year
+        if title and season is not None and episode is not None:
+            # It's a TV Show Episode
+            video = subliminal.video.Episode(str(video_path), title, season, episode, year=year)
+        elif title:
+            # It's a Movie
             video = subliminal.video.Movie(str(video_path), title, year=year)
         else:
             video = subliminal.Video.fromname(str(video_path))

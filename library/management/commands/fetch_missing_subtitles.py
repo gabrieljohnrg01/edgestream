@@ -44,11 +44,13 @@ class Command(BaseCommand):
             download_subtitles_with_subliminal(infile, title=item.title, year=year)
             ext_subs = fuzzy_match_subtitles(infile, item.title, year)
         else:
-            # Episode: use series title for better matching
+            # Episode: use series title and explicit season/episode numbers
             series_title = item.season.series.title
             year = item.season.series.release_date.year if getattr(item.season.series, 'release_date', None) else None
-            # Subliminal often prefers series title + season/episode numbers rather than episode title alone
-            download_subtitles_with_subliminal(infile, title=series_title, year=year)
+            season_num = item.season.season_number
+            ep_num = item.episode_number
+            
+            download_subtitles_with_subliminal(infile, title=series_title, year=year, season=season_num, episode=ep_num)
             ext_subs = fuzzy_match_subtitles(infile, series_title, year)
         
         if ext_subs:
