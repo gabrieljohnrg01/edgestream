@@ -28,13 +28,13 @@ class MovieViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ['title', 'description']
 
 class SeriesViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Series.objects.prefetch_related('genres', 'seasons__episodes').all()
+    queryset = Series.objects.filter(seasons__episodes__is_converted=True).distinct().prefetch_related('genres', 'seasons__episodes')
     serializer_class = SeriesSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ['title', 'description']
 
 class SeasonViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Season.objects.all()
+    queryset = Season.objects.filter(episodes__is_converted=True).distinct()
     serializer_class = SeasonSerializer
 
 class EpisodeViewSet(viewsets.ReadOnlyModelViewSet):
