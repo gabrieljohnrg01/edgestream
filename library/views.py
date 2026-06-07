@@ -23,6 +23,7 @@ from .models import Movie, Series, Season, Episode, MediaItem, ConversionTask, W
 from .tmdb import TMDB_IMAGE_BASE, clean_title, extract_title_year, fetch_tmdb_metadata, parse_date
 
 def webview_login(request):
+    import time
     token = request.GET.get('token')
     next_url = request.GET.get('next', '/')
     if token:
@@ -32,6 +33,13 @@ def webview_login(request):
             user = jwt_auth.get_user(validated_token)
             if user and user.is_active:
                 login(request, user)
+                
+                # Append cache busting parameter to the redirect URL
+                if '?' in next_url:
+                    next_url += f"&_cb={int(time.time())}"
+                else:
+                    next_url += f"?_cb={int(time.time())}"
+                    
                 return redirect(next_url)
         except (InvalidToken, TokenError):
             pass
