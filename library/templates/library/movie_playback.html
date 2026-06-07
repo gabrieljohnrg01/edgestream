@@ -283,11 +283,20 @@ video::cue {
     display: none;
     flex-direction: column;
     box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: 50vh;
     color: #eee;
     font-size: 14px;
     padding: 8px 0;
     backdrop-filter: blur(10px);
+}
+.settings-menu::-webkit-scrollbar {
+    width: 6px;
+}
+.settings-menu::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
 }
 .settings-menu.active {
     display: flex;
@@ -714,17 +723,24 @@ function buildSettingsMenu(hlsInstance) {
             }));
             
             if(textTracks) {
+                let trackList = [];
                 for(let i=0; i<textTracks.length; i++) {
                     const track = textTracks[i];
                     let name = track.label || track.language || `Track ${i+1}`;
                     name = name.replace(/^\d+_+/g, '');
-                    settingsMenu.appendChild(createOptionItem(name, track.mode === 'showing', () => {
+                    trackList.push({track: track, name: name});
+                }
+                
+                trackList.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'}));
+                
+                trackList.forEach(item => {
+                    settingsMenu.appendChild(createOptionItem(item.name, item.track.mode === 'showing', () => {
                         for(let j=0; j<video.textTracks.length; j++) video.textTracks[j].mode = 'hidden';
-                        track.mode = 'showing';
+                        item.track.mode = 'showing';
                         applySubtitleOffset();
                         settingsView = 'main'; buildSettingsMenu(hlsInstance);
                     }));
-                }
+                });
             }
         }
         else if (settingsView === 'subsync') {
