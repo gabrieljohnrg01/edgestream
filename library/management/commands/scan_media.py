@@ -61,25 +61,48 @@ def get_media_duration(path):
         return None
 
 
-def extract_season_episode(filename):
+def extract_season_episode(filename, filepath=""):
+    season = None
+    episode = None
+    
+    # 1. Try to extract Season from folder path (e.g. ".../Season 1/...")
+    match_folder = re.search(r"Season\s+(\d+)", filepath, re.IGNORECASE)
+    if match_folder:
+        season = int(match_folder.group(1))
+
+    # 2. Use guessit for filename
     try:
         from guessit import guessit
         guess = guessit(filename)
-        season = guess.get("season")
-        episode = guess.get("episode")
+        guess_season = guess.get("season")
+        guess_episode = guess.get("episode")
         
-        if isinstance(episode, list):
-            episode = episode[0]
+        if isinstance(guess_episode, list):
+            guess_episode = guess_episode[0]
             
-        if season is not None and episode is not None:
-            return int(season), int(episode)
+        if season is None and guess_season is not None:
+            season = int(guess_season)
+        if guess_episode is not None:
+            episode = int(guess_episode)
     except ImportError:
         pass
 
-    match = re.search(r"[Ss](\d{1,2})[Ee](\d{1,2})", filename)
-    if match:
-        return int(match.group(1)), int(match.group(2))
-    return None, None
+    # 3. Regex fallback for standard S01E01 format
+    if season is None or episode is None:
+        match_regex = re.search(r"[Ss](\d{1,2})[Ee](\d{1,2})", filename)
+        if match_regex:
+            if season is None:
+                season = int(match_regex.group(1))
+            if episode is None:
+                episode = int(match_regex.group(2))
+                
+    # 4. Fallback for absolute episode formats like " - 050 - "
+    if episode is None:
+        match_abs = re.search(r"-\s*(\d{2,4})\s*-", filename)
+        if match_abs:
+            episode = int(match_abs.group(1))
+
+    return season, episode
 
 
 class Command(BaseCommand):
@@ -171,12 +194,11 @@ class Command(BaseCommand):
                 if not filename.lower().endswith((".mp4", ".avi", ".mkv", ".m4v")):
                     continue
 
-                season_num, episode_num = extract_season_episode(filename)
+                full_path = os.path.join(root, filename)
+                season_num, episode_num = extract_season_episode(filename, full_path)
                 if season_num is None or episode_num is None:
                     self.stdout.write(self.style.WARNING(f"Could not parse S/E from '{filename}'."))
                     continue
-
-                full_path = os.path.join(root, filename)
                 rel_path = os.path.relpath(full_path, MEDIA_ROOT).replace(os.sep, "/")
                 file_path = f"/media/{rel_path}"
 
