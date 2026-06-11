@@ -111,7 +111,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.scan_movies()
         self.scan_series()
-        self.scan_hls_movies()
         self.scan_hls_series()
 
     def scan_movies(self):
@@ -413,10 +412,15 @@ class Command(BaseCommand):
             rel_path = os.path.relpath(root, series_hls_dir)
             parts = rel_path.split(os.sep)
             
-            if len(parts) < 2:
+            # Must be exactly Series / Season / Episode folder depth
+            if len(parts) != 3:
                 continue
-
+                
             series_folder_name = parts[0]
+            
+            # Only focus on Fullmetal Alchemist for now!
+            if "Fullmetal Alchemist" not in series_folder_name:
+                continue
             filename_without_ext = parts[-1]
             filename = f"{filename_without_ext}.mkv"
             
