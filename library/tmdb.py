@@ -76,6 +76,9 @@ def clean_title(filename):
     quality_tags = r"\b(1080p|720p|480p|4k|hd|uhd|bluray|bdrip|web|webrip|hdtv|h264|h265|x264|x265|aac|dts|ac3|yts|rarbg|etrg|vost|elite|avi)\b"
     title = re.sub(quality_tags, "", title, flags=re.IGNORECASE)
     
+    # Remove absolute episode numbers at the end like " 01 ", " 01 V2 "
+    title = re.sub(r"\b\d{1,4}(\s*[Vv]\d+)?\s*$", "", title)
+    
     # Remove any remaining special chars
     title = re.sub(r"[^\w\s]", "", title)
     
