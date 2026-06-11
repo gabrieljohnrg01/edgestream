@@ -316,9 +316,23 @@ class Command(BaseCommand):
         if not os.path.isdir(movies_hls_dir):
             return
 
-        for root, _, files in os.walk(movies_hls_dir):
-            if "index.m3u8" not in files:
+        for root, dirs, files in os.walk(movies_hls_dir):
+            m3u8_files = [f for f in files if f.endswith(".m3u8")]
+            if not m3u8_files:
                 continue
+                
+            master_playlist = None
+            for m3u8 in m3u8_files:
+                try:
+                    content = open(os.path.join(root, m3u8), "r", encoding="utf-8").read()
+                    if "EXT-X-STREAM-INF" in content:
+                        master_playlist = m3u8
+                        break
+                except Exception:
+                    pass
+                    
+            if not master_playlist:
+                master_playlist = m3u8_files[0]
 
             rel_path = os.path.relpath(root, movies_hls_dir)
             parts = rel_path.split(os.sep)
@@ -378,9 +392,23 @@ class Command(BaseCommand):
 
         series_metadata_cache = {}
 
-        for root, _, files in os.walk(series_hls_dir):
-            if "index.m3u8" not in files:
+        for root, dirs, files in os.walk(series_hls_dir):
+            m3u8_files = [f for f in files if f.endswith(".m3u8")]
+            if not m3u8_files:
                 continue
+                
+            master_playlist = None
+            for m3u8 in m3u8_files:
+                try:
+                    content = open(os.path.join(root, m3u8), "r", encoding="utf-8").read()
+                    if "EXT-X-STREAM-INF" in content:
+                        master_playlist = m3u8
+                        break
+                except Exception:
+                    pass
+                    
+            if not master_playlist:
+                master_playlist = m3u8_files[0]
 
             rel_path = os.path.relpath(root, series_hls_dir)
             parts = rel_path.split(os.sep)
