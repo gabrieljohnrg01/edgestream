@@ -216,17 +216,19 @@ class Command(BaseCommand):
                 if title_guess in series_metadata_cache:
                     metadata = series_metadata_cache[title_guess]
                 else:
+                    self.stdout.write(f"DEBUG: Requesting TMDB for series title: '{title_guess}'")
                     metadata = fetch_tmdb_metadata(title_guess, "SERIES")
                     
                     # If failed, fallback to filename
                     if not metadata and series_folder_name:
                         fallback_guess = clean_title(filename)
+                        self.stdout.write(f"DEBUG: Requesting TMDB for fallback filename title: '{fallback_guess}'")
                         metadata = fetch_tmdb_metadata(fallback_guess, "SERIES")
                         
                     series_metadata_cache[title_guess] = metadata
 
                 if not metadata:
-                    self.stdout.write(self.style.WARNING(f"No TMDB metadata for '{filename}'."))
+                    self.stdout.write(self.style.WARNING(f"No TMDB metadata for '{filename}'. (Guessed titles: '{title_guess}', Fallback: '{clean_title(filename) if series_folder_name else 'none'}')"))
                     continue
 
                 series_title = metadata.get("name") or title_guess
