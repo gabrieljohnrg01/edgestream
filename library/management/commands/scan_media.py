@@ -466,14 +466,14 @@ class Command(BaseCommand):
 
             season_obj, _ = Season.objects.get_or_create(series=series, season_number=season_num)
             
-            episode_metadata = fetch_tmdb_metadata(series_title, "EPISODE", season_number=season_num, episode_number=episode_num)
+            episode_details = fetch_episode_details(tmdb_id, season_num, episode_num)
             ep_title = ""
             ep_description = ""
             ep_still = ""
-            if episode_metadata:
-                ep_title = episode_metadata.get("name", "")
-                ep_description = episode_metadata.get("overview", "")
-                still_path = episode_metadata.get("still_path")
+            if episode_details:
+                ep_title = episode_details.get("name", "")
+                ep_description = episode_details.get("overview", "")
+                still_path = episode_details.get("still_path")
                 if still_path:
                     ep_still = download_tmdb_image(f"{TMDB_IMAGE_BASE}{still_path}", "stills")
 
