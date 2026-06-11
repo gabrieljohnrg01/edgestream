@@ -189,7 +189,13 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING(f"Skipping {series_dir}: directory does not exist."))
             return
 
+        series_metadata_cache = {}
+
         for root, _, files in os.walk(series_dir):
+            # Extract series folder name from path
+            rel_path = os.path.relpath(root, series_dir)
+            parts = rel_path.split(os.sep)
+            series_folder_name = parts[0] if parts and parts[0] != "." else ""
             for filename in sorted(files):
                 if not filename.lower().endswith((".mp4", ".avi", ".mkv", ".m4v")):
                     continue
@@ -205,8 +211,20 @@ class Command(BaseCommand):
                 if Episode.objects.filter(file_path=file_path).exists():
                     continue
 
-                title_guess = clean_title(filename)
-                metadata = fetch_tmdb_metadata(title_guess, "SERIES")
+                title_guess = clean_title(series_folder_name if series_folder_name else filename)
+                
+                if title_guess in series_metadata_cache:
+                    metadata = series_metadata_cache[title_guess]
+                else:
+                    metadata = fetch_tmdb_metadata(title_guess, "SERIES")
+                    
+                    # If failed, fallback to filename
+                    if not metadata and series_folder_name:
+                        fallback_guess = clean_title(filename)
+                        metadata = fetch_tmdb_metadata(fallback_guess, "SERIES")
+                        
+                    series_metadata_cache[title_guess] = metadata
+
                 if not metadata:
                     self.stdout.write(self.style.WARNING(f"No TMDB metadata for '{filename}'."))
                     continue
