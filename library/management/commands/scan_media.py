@@ -111,6 +111,8 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.scan_movies()
         self.scan_series()
+        self.scan_hls_movies()
+        self.scan_hls_series()
 
     def scan_movies(self):
         movies_dir = MEDIA_FOLDERS["movies"]
@@ -308,3 +310,148 @@ class Command(BaseCommand):
                         episode=episode,
                         status=ConversionTask.STATUS_QUEUED,
                     )
+
+    def scan_hls_movies(self):
+        movies_hls_dir = os.path.join(HLS_ROOT, "movies")
+        if not os.path.isdir(movies_hls_dir):
+            return
+
+        for root, _, files in os.walk(movies_hls_dir):
+            if "index.m3u8" not in files:
+                continue
+
+            rel_path = os.path.relpath(root, movies_hls_dir)
+            parts = rel_path.split(os.sep)
+            
+            if not parts:
+                continue
+
+            title_source = parts[0]
+            file_path = f"/media/movies/{rel_path.replace(os.sep, '/')}.mkv"
+
+            if Movie.objects.filter(file_path=file_path).exists():
+                continue
+
+            title_guess, year_guess = extract_title_year(title_source)
+            metadata = fetch_tmdb_metadata(title_guess, "MOVIE", year_guess)
+            if not metadata:
+                self.stdout.write(self.style.WARNING(f"No TMDB metadata for HLS movie '{title_source}'."))
+                continue
+
+            poster_path = metadata.get("poster_path") or ""
+            poster_url = download_tmdb_image(f"{TMDB_IMAGE_BASE}{poster_path}", "posters") if poster_path else ""
+            backdrop_path = metadata.get("backdrop_path") or ""
+            backdrop_url = download_tmdb_image(f"{TMDB_IMAGE_BASE}{backdrop_path}", "backdrops") if backdrop_path else ""
+            description = metadata.get("overview", "")
+            release_date = parse_date(metadata.get("release_date"))
+            tmdb_id = metadata.get("id") or 0
+
+            movie, created = Movie.objects.update_or_create(
+                file_path=file_path,
+                defaults={
+                    "title": metadata.get("title") or title_guess,
+                    "tmdb_id": tmdb_id,
+                    "description": description,
+                    "poster_url": poster_url,
+                    "backdrop_url": backdrop_url,
+                    "release_date": release_date,
+                    "duration": 0,
+                    "is_converted": True,
+                },
+            )
+
+            genre_ids = metadata.get("genre_ids", [])
+            genre_names = get_genre_names(genre_ids)
+            if genre_names:
+                genres = []
+                for g_name in genre_names:
+                    g, _ = Genre.objects.get_or_create(name=g_name)
+                    genres.append(g)
+                movie.genres.set(genres)
+
+            self.stdout.write(self.style.SUCCESS(f"{'Added' if created else 'Updated'} HLS MOVIE: {movie.title}"))
+
+    def scan_hls_series(self):
+        series_hls_dir = os.path.join(HLS_ROOT, "series")
+        if not os.path.isdir(series_hls_dir):
+            return
+
+        series_metadata_cache = {}
+
+        for root, _, files in os.walk(series_hls_dir):
+            if "index.m3u8" not in files:
+                continue
+
+            rel_path = os.path.relpath(root, series_hls_dir)
+            parts = rel_path.split(os.sep)
+            
+            if len(parts) < 2:
+                continue
+
+            series_folder_name = parts[0]
+            filename_without_ext = parts[-1]
+            filename = f"{filename_without_ext}.mkv"
+            
+            full_path = os.path.join(root, filename)
+            season_num, episode_num = extract_season_episode(filename, full_path)
+            
+            if season_num is None or episode_num is None:
+                self.stdout.write(self.style.WARNING(f"Could not parse S/E from HLS folder '{rel_path}'."))
+                continue
+
+            file_path = f"/media/series/{rel_path.replace(os.sep, '/')}.mkv"
+
+            if Episode.objects.filter(file_path=file_path).exists():
+                continue
+
+            title_guess = clean_title(series_folder_name)
+            
+            if title_guess in series_metadata_cache:
+                metadata = series_metadata_cache[title_guess]
+            else:
+                self.stdout.write(f"DEBUG: Requesting TMDB for HLS series title: '{title_guess}'")
+                metadata = fetch_tmdb_metadata(title_guess, "SERIES")
+                series_metadata_cache[title_guess] = metadata
+
+            if not metadata:
+                self.stdout.write(self.style.WARNING(f"No TMDB metadata for HLS series '{series_folder_name}'."))
+                continue
+
+            series_title = metadata.get("name") or title_guess
+            tmdb_id = metadata.get("id") or 0
+            series, created = Series.objects.update_or_create(
+                title=series_title,
+                defaults={
+                    "tmdb_id": tmdb_id,
+                    "description": metadata.get("overview", ""),
+                    "poster_url": download_tmdb_image(f"{TMDB_IMAGE_BASE}{metadata.get('poster_path')}", "posters") if metadata.get("poster_path") else "",
+                    "backdrop_url": download_tmdb_image(f"{TMDB_IMAGE_BASE}{metadata.get('backdrop_path')}", "backdrops") if metadata.get("backdrop_path") else "",
+                    "release_date": parse_date(metadata.get("first_air_date")),
+                },
+            )
+            if created:
+                self.stdout.write(self.style.SUCCESS(f"Added SERIES: {series_title}"))
+
+            season_obj, _ = Season.objects.get_or_create(series=series, season_number=season_num)
+            
+            episode_metadata = fetch_tmdb_metadata(series_title, "EPISODE", season_number=season_num, episode_number=episode_num)
+            ep_title = ""
+            ep_description = ""
+            ep_still = ""
+            if episode_metadata:
+                ep_title = episode_metadata.get("name", "")
+                ep_description = episode_metadata.get("overview", "")
+                still_path = episode_metadata.get("still_path")
+                if still_path:
+                    ep_still = download_tmdb_image(f"{TMDB_IMAGE_BASE}{still_path}", "stills")
+
+            Episode.objects.create(
+                season=season_obj,
+                episode_number=episode_num,
+                title=ep_title,
+                file_path=file_path,
+                description=ep_description,
+                still_url=ep_still,
+                is_converted=True,
+            )
+            self.stdout.write(self.style.SUCCESS(f"Added HLS Episode: {series_title} S{season_num:02d}E{episode_num:02d}"))
