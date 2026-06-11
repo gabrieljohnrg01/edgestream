@@ -369,7 +369,7 @@ class Command(BaseCommand):
                     "poster_url": poster_url,
                     "backdrop_url": backdrop_url,
                     "release_date": release_date,
-                    "duration": 0,
+                    "duration": None,
                     "is_converted": True,
                 },
             )
