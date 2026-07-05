@@ -1,4 +1,4 @@
-# Signalyx Media Server
+# Edgestream
 
 A Django-based media server built for Ubuntu deployments with HLS conversion, responsive TV-friendly UI, search, and a conversion queue dashboard.
 
