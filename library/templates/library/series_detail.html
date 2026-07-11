@@ -61,7 +61,7 @@
             </div>
             
             <div class="detail-actions" style="display: flex; gap: 16px; align-items: center;">
-                <a href="{% if resume_episode %}{% url 'episode_playback' resume_episode.pk %}{% else %}#{% endif %}" class="btn-primary" style="background: var(--accent-crimson); color: white; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 10px; transition: background 0.2s; font-size: 1.1rem; border: none; cursor: pointer; {% if not resume_episode %}opacity: 0.5; pointer-events: none;{% endif %}">
+                <a href="{% if resume_episode %}{% url 'episode_playback' resume_episode.season.series.pk resume_episode.season.season_number resume_episode.episode_number %}{% else %}#{% endif %}" class="btn-primary" style="background: var(--accent-crimson); color: white; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 10px; transition: background 0.2s; font-size: 1.1rem; border: none; cursor: pointer; {% if not resume_episode %}opacity: 0.5; pointer-events: none;{% endif %}">
                     <i class="bi bi-play-fill" style="font-size: 1.4rem;"></i> 
                     {% if resume_episode %}
                         Play S{{ resume_episode.season.season_number }} E{{ resume_episode.episode_number }}

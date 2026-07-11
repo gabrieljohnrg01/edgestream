@@ -465,7 +465,7 @@ video::cue {
             <div class="control-buttons">
                 <div class="control-buttons-left">
                     {% if prev_episode %}
-                    <a href="{% url 'episode_playback' prev_episode.pk %}" class="player-btn" style="text-decoration: none;" title="Previous Episode">
+                    <a href="{% url 'episode_playback' series.pk prev_episode.season.season_number prev_episode.episode_number %}" class="player-btn" style="text-decoration: none;" title="Previous Episode">
                         <i class="bi bi-skip-start-fill"></i>
                     </a>
                     {% endif %}
@@ -473,7 +473,7 @@ video::cue {
                         <i class="bi bi-play-fill"></i>
                     </button>
                     {% if next_episode %}
-                    <a href="{% url 'episode_playback' next_episode.pk %}" class="player-btn" style="text-decoration: none;" title="Next Episode">
+                    <a href="{% url 'episode_playback' series.pk next_episode.season.season_number next_episode.episode_number %}" class="player-btn" style="text-decoration: none;" title="Next Episode">
                         <i class="bi bi-skip-end-fill"></i>
                     </a>
                     {% endif %}

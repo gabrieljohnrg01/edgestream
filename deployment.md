@@ -21,9 +21,9 @@ pip install gunicorn
 ```
 
 ### 3. Run with Gunicorn
-Run the Django app using Gunicorn on port 8000:
+Run the Django app using Gunicorn on port 8001:
 ```bash
-gunicorn --workers 3 --bind 0.0.0.0:8000 mediaserver.wsgi:application
+gunicorn --workers 3 --bind 0.0.0.0:8001 mediaserver.wsgi:application
 ```
 *Note: Run this inside a daemon or service manager like `systemd` or `supervisor` to keep it running in the background.*
 
@@ -44,7 +44,7 @@ server {
     }
 
     location / {
-        proxy_pass http://127.0.0.1:8000;
+        proxy_pass http://127.0.0.1:8001;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_addrs;

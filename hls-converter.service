@@ -1,0 +1,20 @@
+[Unit]
+Description=HLS Converter Worker for EdgeStream
+After=network.target
+
+[Service]
+User=gab
+Group=www-data
+WorkingDirectory=/home/gab/edgestream
+
+Environment="DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1"
+
+# We run the watch_media script which is native to the project
+ExecStart=/home/gab/edgestream/venv/bin/python manage.py watch_media
+
+# Restart if it crashes
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

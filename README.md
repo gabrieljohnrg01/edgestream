@@ -1,4 +1,4 @@
-# Signalyx Media Server
+# Edgestream
 
 A Django-based media server built for Ubuntu deployments with HLS conversion, responsive TV-friendly UI, search, and a conversion queue dashboard.
 
@@ -92,10 +92,10 @@ sudo chown -R $USER:$USER /var/www/media
 
 ```bash
 source venv/bin/activate
-python manage.py runserver 0.0.0.0:8000
+python manage.py runserver 0.0.0.0:8001
 ```
 
-Then open `http://127.0.0.1:8000/` in your browser.
+Then open `http://127.0.0.1:8001/` in your browser.
 
 ## Daily Operation
 
@@ -161,7 +161,7 @@ pip install gunicorn
 Start Gunicorn for testing:
 
 ```bash
-gunicorn mediaserver.wsgi:application --bind 127.0.0.1:8000
+gunicorn mediaserver.wsgi:application --bind 127.0.0.1:8001
 ```
 
 ### 3. Configure Nginx
@@ -230,7 +230,7 @@ python manage.py migrate
 python manage.py collectstatic --noinput
 
 # Start dev server
-python manage.py runserver 0.0.0.0:8000
+python manage.py runserver 0.0.0.0:8001
 
 # Scan media and queue conversions
 python manage.py scan_media

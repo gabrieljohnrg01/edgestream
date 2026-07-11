@@ -380,8 +380,13 @@ def get_hls_subtitles(file_path):
             })
     return subs
 
-def episode_playback(request, episode_pk):
-    episode = get_object_or_404(Episode.objects.filter(is_converted=True), pk=episode_pk)
+def episode_playback(request, series_pk, season_number, episode_number):
+    episode = get_object_or_404(
+        Episode.objects.filter(is_converted=True),
+        season__series__pk=series_pk,
+        season__season_number=season_number,
+        episode_number=episode_number
+    )
     season = episode.season
     series_obj = season.series
     

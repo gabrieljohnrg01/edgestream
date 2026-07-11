@@ -118,7 +118,7 @@
                         <p class="card-subtitle">Resume</p>
                     </a>
                 {% elif progress.episode %}
-                    <a href="{% url 'episode_playback' progress.episode.pk %}" class="card" style="flex: 0 0 auto; width: 220px;">
+                    <a href="{% url 'episode_playback' progress.episode.season.series.pk progress.episode.season.season_number progress.episode.episode_number %}" class="card" style="flex: 0 0 auto; width: 220px;">
                         <div style="position: relative;">
                             <img src="{{ progress.episode.season.series.poster_url }}" alt="{{ progress.episode.season.series.title }}">
                             <div style="position: absolute; bottom: 12px; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.2); overflow: hidden;">

@@ -8,7 +8,7 @@ urlpatterns = [
     path("series/", views.series, name="series"),
     path("series/<int:pk>/", views.series_detail, name="series_detail"),
     path("series/<int:series_pk>/season/<int:season_pk>/", views.season_detail, name="season_detail"),
-    path("episode/<int:episode_pk>/", views.episode_playback, name="episode_playback"),
+    path("series/<int:series_pk>/<int:season_number>/<int:episode_number>/", views.episode_playback, name="episode_playback"),
     path("movie/<int:pk>/", views.movie_detail, name="movie_detail"),
     path("movie/<int:pk>/play/", views.movie_playback, name="movie_playback"),
 
